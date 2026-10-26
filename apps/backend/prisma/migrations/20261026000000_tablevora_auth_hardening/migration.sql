@@ -1,0 +1,3 @@
+ALTER TABLE "users" ADD COLUMN "failedTwoFactorAttempts" INTEGER NOT NULL DEFAULT 0,
+ADD COLUMN "twoFactorLockedUntil" TIMESTAMP(3),
+ADD COLUMN "tokenVersion" INTEGER NOT NULL DEFAULT 0;

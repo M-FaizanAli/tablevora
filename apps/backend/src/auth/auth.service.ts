@@ -16,6 +16,7 @@ import {
 import * as bcrypt from 'bcrypt';
 import { PrismaService } from '../prisma/prisma.service';
 import { TwoFactorService } from './two-factor.service';
+import { RealtimeGateway } from '../realtime/realtime.gateway';
 
 @Injectable()
 export class AuthService {
@@ -23,6 +24,7 @@ export class AuthService {
     private readonly prisma: PrismaService,
     private readonly jwt: JwtService,
     private readonly twoFactor: TwoFactorService,
+    private readonly realtime: RealtimeGateway,
   ) {}
 
   private toSessionUser(user: {
@@ -179,11 +181,17 @@ export class AuthService {
     return this.issueSession(user);
   }
 
+  async logout(userId: string) {
+    // Logging out revokes all sessions for this account, including copied JWTs.
+    await this.prisma.user.update({ where: { id: userId }, data: { tokenVersion: { increment: 1 } } });
+    this.realtime.disconnectUser(userId);
+  }
+
   private async issueSession(
-    user: Parameters<AuthService['toSessionUser']>[0],
+    user: Parameters<AuthService['toSessionUser']>[0] & { tokenVersion: number },
   ) {
     const sessionUser = this.toSessionUser(user);
-    const token = await this.jwt.signAsync({ sub: user.id });
+    const token = await this.jwt.signAsync({ sub: user.id, tokenVersion: user.tokenVersion });
     return { token, user: sessionUser };
   }
 }

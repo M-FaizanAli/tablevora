@@ -1,0 +1,25 @@
+name: Tablevora checks
+on:
+  push:
+    branches: [master, 'codex/**']
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --filter @nodedr-restaurant/types build
+      - run: pnpm --filter @nodedr-restaurant/backend exec prisma generate
+      - run: pnpm --filter @nodedr-restaurant/backend build
+      - run: pnpm --filter @nodedr-restaurant/backend test --runInBand
+      - run: pnpm --filter web test
+      - run: pnpm --filter web build
+      - run: pnpm audit --audit-level high

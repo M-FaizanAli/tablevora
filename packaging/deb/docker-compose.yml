@@ -17,7 +17,7 @@ services:
       timeout: 5s
       retries: 10
   backend:
-    image: ghcr.io/raktim94/nodedr-restaurant-pos-backend:@VERSION@
+    image: ghcr.io/m-faizanali/tablevora-backend:@VERSION@
     container_name: nodedr-orderrestro-backend
     restart: unless-stopped
     environment:
@@ -44,7 +44,7 @@ services:
       - 'c 189:* rmw'
       - 'c 180:* rmw'
   web:
-    image: ghcr.io/raktim94/nodedr-restaurant-pos-web:@VERSION@
+    image: ghcr.io/m-faizanali/tablevora-web:@VERSION@
     container_name: nodedr-orderrestro-web
     restart: unless-stopped
     ports:

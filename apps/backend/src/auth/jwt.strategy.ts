@@ -7,6 +7,7 @@ import { PrismaService } from '../prisma/prisma.service';
 
 interface JwtPayload {
   sub: string;
+  tokenVersion: number;
 }
 
 const cookieExtractor = (req: {
@@ -36,7 +37,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       },
     });
 
-    if (!user || !user.isActive) {
+    if (!user || !user.isActive || !Number.isInteger(payload.tokenVersion) || payload.tokenVersion !== user.tokenVersion) {
       throw new UnauthorizedException('Session no longer valid');
     }
 

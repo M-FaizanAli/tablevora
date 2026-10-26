@@ -51,11 +51,13 @@ export default function LoginPage() {
   };
 
   return (
-    <main className="relative flex flex-1 items-center justify-center overflow-hidden bg-background px-4">
-      <div
-        aria-hidden
-        className="pointer-events-none absolute inset-x-0 top-0 -z-10 h-[420px] bg-[radial-gradient(50%_50%_at_50%_0%,color-mix(in_oklch,var(--primary),transparent_90%),transparent)]"
-      />
+    <main className="relative grid flex-1 overflow-hidden bg-background lg:grid-cols-2">
+      <aside className="hidden flex-col justify-between bg-[#123E32] p-14 text-[#F7F5EF] lg:flex">
+        <Link href="/" className="flex items-center gap-3 text-xl font-semibold"><Logo size={42} />Tablevora.</Link>
+        <div className="py-20"><p className="mb-6 text-xs uppercase tracking-[.2em] text-[#A9E8C8]">Welcome to a better service</p><h2 className="text-6xl font-medium leading-[1.08] tracking-tight">Everything in place.<br /><span className="text-[#A9E8C8]">Everyone in sync.</span></h2><p className="mt-7 max-w-sm text-base leading-8 text-[#D7EBDD]">Your tables, kitchen, and team. One workspace to keep the day moving.</p></div>
+        <Link href="/about" className="text-xs text-[#D7EBDD]">Open-source foundation. Your restaurant at the centre.</Link>
+      </aside>
+      <div className="flex items-center justify-center px-6 py-14">
       <motion.div
         initial={prefersReducedMotion ? false : { opacity: 0, y: 14 }}
         animate={{ opacity: 1, y: 0 }}
@@ -67,11 +69,12 @@ export default function LoginPage() {
             <Logo size={44} />
           </Link>
           <h1 className="text-2xl font-semibold tracking-tight text-foreground">
-            Nodedr OrderRestro
+            Welcome back.
           </h1>
           <p className="text-sm text-muted-foreground">Sign in to manage your restaurant</p>
         </div>
 
+        {process.env.NEXT_PUBLIC_DEMO_MODE === "true" && <div className="mb-6 rounded-xl border border-primary/20 bg-accent p-4 text-sm text-accent-foreground"><p className="font-semibold">Explore the Tablevora demo</p><p className="mt-2 text-xs">Email: owner@demo.local<br />Password: Password123!</p><p className="mt-2 text-xs">Shared sample workspace. Use fictional information.</p></div>}
         <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-5">
           <div className="flex flex-col gap-2">
             <Label htmlFor="email">Email</Label>
@@ -150,6 +153,7 @@ export default function LoginPage() {
           </Link>
         </p>
       </motion.div>
+      </div>
     </main>
   );
 }

@@ -1,0 +1,16 @@
+Tablevora
+Modified and maintained by Faizan, 2026.
+
+This is a modified version of Nodedr OrderRestro.
+Original project: https://github.com/Raktim94/nodedr-restaurant-pos
+Copyright (C) 2026 Nodedr Infotech Private Limited and Raktim Ranjit.
+Original notices and the GNU Affero General Public License v3 are retained.
+
+Tablevora modifications began on 26 October 2026 and include branding,
+security hardening, demo safeguards, and deployment configuration.
+See TABLEVORA-RELEASE.md and Git history for modification details.
+
+Source: https://github.com/M-FaizanAli/tablevora
+License: AGPL-3.0-only. See LICENSE. No warranty, except as separately agreed.
+Internal @nodedr-restaurant package identifiers and existing integration
+headers remain compatible with the original implementation.

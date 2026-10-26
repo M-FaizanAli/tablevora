@@ -2,7 +2,7 @@
 // set, e.g. postgresql://postgres@127.0.0.1:55432/orderrestro_vf (a throwaway database).
 import { writeFileSync } from 'node:fs';
 import { ConfigService } from '@nestjs/config';
-import forge from 'node-forge';
+import { testCertificate } from './test-certificate';
 import { PrismaService } from '../../prisma/prisma.service';
 import type { AeatResponse } from './verifactu.aeat';
 import { altaHash } from './verifactu.domain';
@@ -14,18 +14,7 @@ if (url) process.env.DATABASE_URL = url;
 const d = url ? describe : describe.skip;
 
 function selfSignedP12(password: string): Buffer {
-  const keys = forge.pki.rsa.generateKeyPair(1024);
-  const cert = forge.pki.createCertificate();
-  cert.publicKey = keys.publicKey;
-  cert.serialNumber = '01';
-  cert.validity.notBefore = new Date(Date.now() - 86_400_000);
-  cert.validity.notAfter = new Date(Date.now() + 365 * 86_400_000);
-  const attrs = [{ name: 'commonName', value: 'TEST SL 89890001K' }];
-  cert.setSubject(attrs);
-  cert.setIssuer(attrs);
-  cert.sign(keys.privateKey, forge.md.sha256.create());
-  const p12 = forge.pkcs12.toPkcs12Asn1(keys.privateKey, [cert], password);
-  return Buffer.from(forge.asn1.toDer(p12).getBytes(), 'binary');
+  return testCertificate('TEST SL 89890001K', password).pfx;
 }
 
 d('VERI*FACTU against PostgreSQL', () => {

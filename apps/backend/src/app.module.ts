@@ -3,6 +3,7 @@ import { ConfigModule } from '@nestjs/config';
 import { ScheduleModule } from '@nestjs/schedule';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { APP_FILTER, APP_GUARD } from '@nestjs/core';
+import { DemoGuard } from './common/guards/demo.guard';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { PrismaExceptionFilter } from './common/filters/prisma-exception.filter';
@@ -89,6 +90,7 @@ import { VerifactuModule } from './modules/verifactu/verifactu.module';
   providers: [
     AppService,
     { provide: APP_GUARD, useClass: ThrottlerGuard },
+    { provide: APP_GUARD, useClass: DemoGuard },
     { provide: APP_FILTER, useClass: PrismaExceptionFilter },
   ],
 })

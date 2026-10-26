@@ -98,4 +98,4 @@ COPY --from=builder /repo/packages/types/node_modules ./packages/types/node_modu
 
 WORKDIR /repo/apps/backend
 EXPOSE 4000
-CMD ["sh", "-c", "npx prisma migrate deploy && node dist/src/main.js"]
+CMD ["sh", "-c", "npx prisma migrate deploy && if [ \"$SEED_DEMO\" = \"true\" ] && [ \"$DEMO_MODE\" = \"true\" ]; then node dist/prisma/seed.js; fi && node dist/src/main.js"]

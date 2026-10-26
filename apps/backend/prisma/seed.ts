@@ -29,6 +29,7 @@ function priceLine(
 const prisma = new PrismaClient();
 
 async function main() {
+  if (process.env.NODE_ENV === 'production' && process.env.DEMO_MODE !== 'true') throw new Error('Demo seeding requires DEMO_MODE=true in production');
   console.log('Seeding permissions...');
   for (const permission of PERMISSIONS) {
     await prisma.permission.upsert({
@@ -46,7 +47,7 @@ async function main() {
     update: {},
     create: {
       id: 'demo-restaurant',
-      name: 'Nodedr Bistro (Demo)',
+      name: 'The Greenhouse · Tablevora Demo',
       currency: 'INR',
     },
   });

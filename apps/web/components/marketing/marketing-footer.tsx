@@ -37,11 +37,11 @@ export function MarketingFooter() {
           <div>
             <Link href="/" className="flex items-center gap-2.5">
               <Logo size={28} />
-              <span className="text-sm font-semibold text-foreground">OrderRestro</span>
+              <span className="text-sm font-semibold text-foreground">Tablevora</span>
             </Link>
             <p className="mt-3 max-w-xs text-sm text-muted-foreground">
               Offline-first restaurant management, self-hosted on your own
-              server. Built by Nodedr Infotech Private Limited.
+              server. Customized and maintained by Faizan.
             </p>
           </div>
 
@@ -68,9 +68,9 @@ export function MarketingFooter() {
 
         <div className="mt-12 flex flex-col items-center justify-between gap-4 border-t border-border/60 pt-6 sm:flex-row">
           <p className="text-xs text-muted-foreground">
-            &copy; {new Date().getFullYear()} Nodedr Infotech Private Limited. Licensed AGPL-3.0.
+            &copy; {new Date().getFullYear()} Tablevora contributors. Based on OrderRestro. Licensed AGPL-3.0.
           </p>
-          <p className="text-xs text-muted-foreground">Made in India.</p>
+          <p className="text-xs text-muted-foreground">Restaurant operations, together.</p>
         </div>
       </div>
     </footer>

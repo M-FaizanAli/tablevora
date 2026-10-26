@@ -1,7 +1,8 @@
 // SOAP client for AEAT's VERI*FACTU submission service (SistemaFacturacion.wsdl, operation
 // RegFactuSistemaFacturacion). Authenticates with the taxpayer's qualified certificate over mutual TLS.
 import * as https from 'node:https';
-import forge from 'node-forge';
+import { execFileSync } from 'node:child_process';
+import { createPrivateKey, X509Certificate } from 'node:crypto';
 import { soap, type VerifactuEnvironment } from './verifactu.domain';
 
 // Endpoints from AEAT's WSDL for systems that issue verifiable invoices (personal-certificate hosts).
@@ -51,32 +52,19 @@ export function inspectCertificate(
   password: string,
 ): { subject: string; expiresAt: Date } {
   try {
-    const asn1 = forge.asn1.fromDer(p12.toString('binary'));
-    const p = forge.pkcs12.pkcs12FromAsn1(asn1, false, password);
-    const bags =
-      p.getBags({ bagType: forge.pki.oids.certBag })[forge.pki.oids.certBag] ??
-      [];
-    const key =
-      (
-        p.getBags({ bagType: forge.pki.oids.pkcs8ShroudedKeyBag })[
-          forge.pki.oids.pkcs8ShroudedKeyBag
-        ] ?? []
-      ).length +
-      (
-        p.getBags({ bagType: forge.pki.oids.keyBag })[forge.pki.oids.keyBag] ??
-        []
-      ).length;
-    const cert = bags.map((b) => b.cert).find((c) => c);
-    if (!cert || key === 0)
-      throw new Error('no certificate with a private key found');
-    const subject = cert.subject.attributes
-      .map((a) => `${a.shortName ?? a.name}=${String(a.value)}`)
-      .join(', ');
-    return { subject, expiresAt: cert.validity.notAfter };
-  } catch (e) {
-    throw new Error(
-      `Cannot read the certificate (wrong password or not a .p12/.pfx file): ${(e as Error).message}`,
-    );
+    // OpenSSL parses the PFX; Node's crypto validates that its leaf certificate
+    // matches the private key. No shell, temporary key files, or password argv.
+    const pem = execFileSync('openssl', ['pkcs12', '-nodes', '-passin', 'env:TABLEVORA_CERT_PASSWORD'], {
+      input: p12, env: { ...process.env, TABLEVORA_CERT_PASSWORD: password },
+      timeout: 10_000, maxBuffer: 2 * 1024 * 1024, stdio: ['pipe', 'pipe', 'pipe'],
+    }).toString('utf8');
+    const key = createPrivateKey(pem);
+    const certificates = pem.match(/-----BEGIN CERTIFICATE-----[\s\S]+?-----END CERTIFICATE-----/g) ?? [];
+    const cert = certificates.map((value) => new X509Certificate(value)).find((value) => value.checkPrivateKey(key));
+    if (!cert) throw new Error('No matching certificate and private key');
+    return { subject: cert.subject.replace(/\n/g, ', '), expiresAt: new Date(cert.validTo) };
+  } catch {
+    throw new Error('Cannot read the certificate (wrong password, unsupported .p12/.pfx file, or no matching private key)');
   }
 }
 

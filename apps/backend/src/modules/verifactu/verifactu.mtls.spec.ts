@@ -2,49 +2,15 @@
 // local HTTPS server that insists on a client certificate. AEAT itself is not contacted.
 import * as https from 'node:https';
 import type { AddressInfo } from 'node:net';
-import forge from 'node-forge';
+import { testCertificate } from './test-certificate';
 import { postSoap } from './verifactu.aeat';
-
-function makeCert(cn: string, san?: string) {
-  const keys = forge.pki.rsa.generateKeyPair(2048);
-  const cert = forge.pki.createCertificate();
-  cert.publicKey = keys.publicKey;
-  cert.serialNumber = '01';
-  cert.validity.notBefore = new Date(Date.now() - 86_400_000);
-  cert.validity.notAfter = new Date(Date.now() + 86_400_000 * 30);
-  const attrs = [{ name: 'commonName', value: cn }];
-  cert.setSubject(attrs);
-  cert.setIssuer(attrs);
-  if (san)
-    cert.setExtensions([
-      { name: 'subjectAltName', altNames: [{ type: 2, value: san }] },
-    ]);
-  cert.sign(keys.privateKey, forge.md.sha256.create());
-  return {
-    keys,
-    cert,
-    pem: forge.pki.certificateToPem(cert),
-    keyPem: forge.pki.privateKeyToPem(keys.privateKey),
-  };
-}
 
 describe('mutual TLS client', () => {
   jest.setTimeout(60_000);
   it('presents the taxpayer certificate and reads the answer', async () => {
-    const server = makeCert('localhost', 'localhost');
-    const client = makeCert('TAXPAYER SL B12345678');
-    const p12 = Buffer.from(
-      forge.asn1
-        .toDer(
-          forge.pkcs12.toPkcs12Asn1(
-            client.keys.privateKey,
-            [client.cert],
-            'pw',
-          ),
-        )
-        .getBytes(),
-      'binary',
-    );
+    const server = testCertificate('localhost', 'pw', 'localhost');
+    const client = testCertificate('TAXPAYER SL B12345678');
+    const p12 = client.pfx;
     let seenCn = '';
     let seenBody = '';
     const srv = https.createServer(

@@ -6,7 +6,7 @@ name: Publish Docker images
 # file with no build step and no access to this repo's source, so `build:`
 # (used in the repo-root docker-compose.yml for a `git clone` + build flow)
 # is not an option there — the CasaOS manifest instead references
-# `ghcr.io/raktim94/nodedr-restaurant-pos-{backend,web}:<version>`, and
+# `ghcr.io/m-faizanali/nodedr-restaurant-pos-{backend,web}:<version>`, and
 # those tags only exist because this workflow pushed them.
 #
 # Each architecture is built on a NATIVE runner (ubuntu-24.04-arm for arm64)
@@ -28,7 +28,6 @@ name: Publish Docker images
 on:
   push:
     tags: ["v*"]
-    branches: [master]
     paths:
       - "apps/backend/**"
       - "apps/web/**"
@@ -90,12 +89,12 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        image: [nodedr-restaurant-pos-backend, nodedr-restaurant-pos-web]
+        image: [tablevora-backend, tablevora-web]
         platform: [linux/amd64, linux/arm64]
         include:
-          - image: nodedr-restaurant-pos-backend
+          - image: tablevora-backend
             dockerfile: apps/backend/Dockerfile
-          - image: nodedr-restaurant-pos-web
+          - image: tablevora-web
             dockerfile: apps/web/Dockerfile
           - platform: linux/amd64
             runner: ubuntu-latest
@@ -145,7 +144,7 @@ jobs:
     timeout-minutes: 15
     strategy:
       matrix:
-        image: [nodedr-restaurant-pos-backend, nodedr-restaurant-pos-web]
+        image: [tablevora-backend, tablevora-web]
     steps:
       - uses: actions/download-artifact@v4
         with:

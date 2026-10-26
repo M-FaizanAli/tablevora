@@ -1,16 +1,23 @@
 {
-  "name": "Nodedr OrderRestro",
-  "short_name": "OrderRestro",
-  "description": "Offline-first restaurant management system — POS, tables, kitchen display, menu, inventory.",
+  "name": "Tablevora",
+  "short_name": "Tablevora",
+  "description": "Offline-first restaurant management system \u2014 POS, tables, kitchen display, menu, inventory.",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
-  "display_override": ["window-controls-overlay", "standalone"],
+  "display_override": [
+    "window-controls-overlay",
+    "standalone"
+  ],
   "orientation": "any",
-  "background_color": "#0f0f11",
-  "theme_color": "#9f1239",
+  "background_color": "#F7F5EF",
+  "theme_color": "#17634B",
   "lang": "en",
-  "categories": ["business", "food", "productivity"],
+  "categories": [
+    "business",
+    "food",
+    "productivity"
+  ],
   "icons": [
     {
       "src": "/icons/icon-192.png",

@@ -245,6 +245,9 @@ model User {
   twoFactorEnabled        Boolean  @default(false)
   twoFactorRecoveryHashes String[] @default([]) // bcrypt hashes of unused one-time recovery codes
   twoFactorLastStep       Int? // last accepted TOTP step: a code works once
+  failedTwoFactorAttempts Int @default(0)
+  twoFactorLockedUntil    DateTime?
+  tokenVersion            Int @default(0)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

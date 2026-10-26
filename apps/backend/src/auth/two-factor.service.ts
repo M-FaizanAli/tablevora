@@ -3,6 +3,7 @@ import {
   Injectable,
   UnauthorizedException,
 } from '@nestjs/common';
+import type { Prisma, User } from '@prisma/client';
 import { ConfigService } from '@nestjs/config';
 import * as bcrypt from 'bcrypt';
 import { AuditService } from '../audit/audit.service';
@@ -30,14 +31,6 @@ interface TwoFactorUser {
 
 @Injectable()
 export class TwoFactorService {
-  // Per-user failed-attempt counter (single backend instance). A 6-digit code
-  // has only a million values, so guessing must be rate-limited per account,
-  // not just per IP.
-  private readonly failures = new Map<
-    string,
-    { count: number; until: number }
-  >();
-
   constructor(
     private readonly prisma: PrismaService,
     private readonly config: ConfigService,
@@ -51,88 +44,58 @@ export class TwoFactorService {
     );
   }
 
-  private assertNotLocked(userId: string) {
-    const f = this.failures.get(userId);
-    if (f && f.count >= MAX_FAILURES && Date.now() < f.until)
-      throw new UnauthorizedException(
-        'Too many incorrect codes. Try again in 15 minutes.',
-      );
-  }
-
-  private fail(userId: string): never {
-    const f = this.failures.get(userId);
-    const fresh = !f || Date.now() >= f.until;
-    this.failures.set(userId, {
-      count: fresh ? 1 : f.count + 1,
-      until: Date.now() + LOCK_MS,
-    });
-    throw new UnauthorizedException('Invalid verification code');
-  }
-
-  /**
-   * Second factor at login: a current authenticator code, or one unused
-   * recovery code (consumed on use). Throws if missing or wrong.
+  /** Serialize attempts per account in PostgreSQL, shared across workers and restarts.
+   * Failure results commit BEFORE an exception is thrown; otherwise a failed
+   * attempt would roll back its own counter and never enforce the lockout.
    */
+  private async attempt<T>(userId: string, verify: (tx: Prisma.TransactionClient, user: User) => Promise<T | null>): Promise<T> {
+    const result = await this.prisma.$transaction(async (tx) => {
+      await tx.$queryRaw`SELECT id FROM users WHERE id = ${userId} FOR UPDATE`;
+      const user = await tx.user.findUniqueOrThrow({ where: { id: userId } });
+      const now = Date.now();
+      const activeWindow = user.twoFactorLockedUntil != null && user.twoFactorLockedUntil.getTime() > now;
+      if (activeWindow && user.failedTwoFactorAttempts >= MAX_FAILURES) {
+        return { ok: false as const, message: 'Too many incorrect codes. Try again in 15 minutes.' };
+      }
+      const value = await verify(tx, user);
+      if (value === null) {
+        await tx.user.update({ where: { id: userId }, data: {
+          failedTwoFactorAttempts: activeWindow ? user.failedTwoFactorAttempts + 1 : 1,
+          twoFactorLockedUntil: new Date(now + LOCK_MS),
+        } });
+        return { ok: false as const, message: 'Invalid verification code' };
+      }
+      await tx.user.update({ where: { id: userId }, data: { failedTwoFactorAttempts: 0, twoFactorLockedUntil: null } });
+      return { ok: true as const, value };
+    }, { timeout: 15_000 });
+    if (!result.ok) throw new UnauthorizedException(result.message);
+    return result.value;
+  }
+
   async verifyLogin(user: TwoFactorUser, code: string | undefined) {
     if (!code) throw new UnauthorizedException('TWO_FACTOR_REQUIRED');
-    this.assertNotLocked(user.id);
-    const trimmed = code.trim();
-
-    if (/^\d{6}$/.test(trimmed) && user.twoFactorSecret) {
-      // If the stored secret can no longer be opened (the signing key was
-      // changed), treat the code as wrong rather than erroring — recovery
-      // codes are hashed separately and still work.
-      let plain: string | null = null;
-      try {
-        plain = openSecret(user.twoFactorSecret, this.keyMaterial);
-      } catch {
-        plain = null;
+    await this.attempt(user.id, async (tx, current) => {
+      if (!current.isActive || !current.twoFactorEnabled) return null;
+      const trimmed = code.trim();
+      if (/^\d{6}$/.test(trimmed) && current.twoFactorSecret) {
+        let plain: string | null = null;
+        try { plain = openSecret(current.twoFactorSecret, this.keyMaterial); } catch { /* recovery codes remain usable */ }
+        const step = plain ? verifyTotp(plain, trimmed) : null;
+        if (step == null || step <= (current.twoFactorLastStep ?? 0)) return null;
+        await tx.user.update({ where: { id: current.id }, data: { twoFactorLastStep: step } });
+        return true;
       }
-      const step = plain ? verifyTotp(plain, trimmed) : null;
-      if (step != null && step > (user.twoFactorLastStep ?? 0)) {
-        // Atomic: only the request that advances the step wins, so a
-        // replayed or concurrently-reused code is rejected.
-        const { count } = await this.prisma.user.updateMany({
-          where: {
-            id: user.id,
-            OR: [
-              { twoFactorLastStep: null },
-              { twoFactorLastStep: { lt: step } },
-            ],
-          },
-          data: { twoFactorLastStep: step },
-        });
-        if (count === 1) {
-          this.failures.delete(user.id);
-          return;
+      const normalised = trimmed.toUpperCase().replace(/[\s-]/g, '');
+      for (const hash of current.twoFactorRecoveryHashes) {
+        if (await bcrypt.compare(normalised, hash)) {
+          await tx.user.update({ where: { id: current.id }, data: {
+            twoFactorRecoveryHashes: current.twoFactorRecoveryHashes.filter((h) => h !== hash),
+          } });
+          return true;
         }
       }
-      this.fail(user.id);
-    }
-
-    if (await this.consumeRecoveryCode(user, trimmed)) {
-      this.failures.delete(user.id);
-      return;
-    }
-    this.fail(user.id);
-  }
-
-  private async consumeRecoveryCode(user: TwoFactorUser, input: string) {
-    const normalised = input.toUpperCase().replace(/[\s-]/g, '');
-    for (const hash of user.twoFactorRecoveryHashes) {
-      if (await bcrypt.compare(normalised, hash)) {
-        const { count } = await this.prisma.user.updateMany({
-          where: { id: user.id, twoFactorRecoveryHashes: { has: hash } },
-          data: {
-            twoFactorRecoveryHashes: user.twoFactorRecoveryHashes.filter(
-              (h) => h !== hash,
-            ),
-          },
-        });
-        return count === 1;
-      }
-    }
-    return false;
+      return null;
+    });
   }
 
   async status(userId: string) {
@@ -172,39 +135,19 @@ export class TwoFactorService {
 
   /** Confirms enrolment with a first valid code; returns recovery codes once. */
   async enable(userId: string, code: string) {
-    const u = await this.prisma.user.findUniqueOrThrow({
-      where: { id: userId },
-      select: { twoFactorEnabled: true, twoFactorSecret: true },
+    const codes = await this.attempt(userId, async (tx, user) => {
+      if (user.twoFactorEnabled) throw new BadRequestException('Two-factor authentication is already on');
+      if (!user.twoFactorSecret) throw new BadRequestException('Start setup first');
+      const step = verifyTotp(openSecret(user.twoFactorSecret, this.keyMaterial), code);
+      if (step == null) return null;
+      const recoveryCodes = Array.from({ length: RECOVERY_CODES }, generateRecoveryCode);
+      const hashes = await Promise.all(recoveryCodes.map((c) => bcrypt.hash(c.replace(/-/g, ''), 10)));
+      await tx.user.update({ where: { id: userId }, data: {
+        twoFactorEnabled: true, twoFactorLastStep: step, twoFactorRecoveryHashes: hashes,
+      } });
+      return recoveryCodes;
     });
-    if (u.twoFactorEnabled)
-      throw new BadRequestException('Two-factor authentication is already on');
-    if (!u.twoFactorSecret) throw new BadRequestException('Start setup first');
-    this.assertNotLocked(userId);
-    const step = verifyTotp(
-      openSecret(u.twoFactorSecret, this.keyMaterial),
-      code,
-    );
-    if (step == null) this.fail(userId);
-
-    const codes = Array.from({ length: RECOVERY_CODES }, generateRecoveryCode);
-    const hashes = await Promise.all(
-      codes.map((c) => bcrypt.hash(c.replace(/-/g, ''), 10)),
-    );
-    await this.prisma.user.update({
-      where: { id: userId },
-      data: {
-        twoFactorEnabled: true,
-        twoFactorLastStep: step,
-        twoFactorRecoveryHashes: hashes,
-      },
-    });
-    this.failures.delete(userId);
-    await this.audit.record({
-      userId,
-      action: '2fa.enabled',
-      entity: 'User',
-      entityId: userId,
-    });
+    await this.audit.record({ userId, action: '2fa.enabled', entity: 'User', entityId: userId });
     return { recoveryCodes: codes };
   }
 
@@ -250,10 +193,11 @@ export class TwoFactorService {
   }
 
   private async clear(userId: string) {
-    this.failures.delete(userId);
     await this.prisma.user.update({
       where: { id: userId },
       data: {
+        failedTwoFactorAttempts: 0,
+        twoFactorLockedUntil: null,
         twoFactorEnabled: false,
         twoFactorSecret: null,
         twoFactorLastStep: null,

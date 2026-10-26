@@ -18,7 +18,7 @@ import { UserMenu } from "./user-menu";
 
 // The restaurant's own logo + name lead the sidebar header — this is
 // white-label self-hosted software, so the operator's branding takes the
-// prime spot an operator actually looks at. The Nodedr OrderRestro product
+// prime spot an operator actually looks at. The Tablevora product
 // mark moves to a small credit line at the bottom (BrandFooter) instead of
 // competing with it up here. Falls back to the product mark only until the
 // restaurant sets its own logo/name under Settings.
@@ -47,7 +47,7 @@ function RestaurantBrand() {
     <>
       <Logo />
       <span className="truncate text-sm font-semibold tracking-tight text-sidebar-foreground">
-        {restaurant?.name ?? "Nodedr OrderRestro"}
+        {restaurant?.name ?? "Tablevora"}
       </span>
     </>
   );
@@ -96,6 +96,7 @@ export function AppShell({
       </Sheet>
 
       <div className="flex min-w-0 flex-1 flex-col">
+        {process.env.NEXT_PUBLIC_DEMO_MODE === "true" && <div className="bg-accent px-4 py-2 text-center text-xs text-accent-foreground">Tablevora demo · Shared sample data. Try orders and kitchen workflows. Administration is locked. Please use fictional information.</div>}
         <header className="flex h-16 shrink-0 items-center justify-between border-b border-border bg-background/80 px-4 backdrop-blur sm:px-6">
           <button
             type="button"

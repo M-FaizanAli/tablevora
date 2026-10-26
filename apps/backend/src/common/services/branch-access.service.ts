@@ -1,4 +1,4 @@
-import { ForbiddenException, Injectable } from '@nestjs/common';
+import { BadRequestException, ForbiddenException, Injectable } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 
 // Phase 1 tenancy check: a branch belongs to exactly one restaurant, and a
@@ -12,6 +12,15 @@ export class BranchAccessService {
   constructor(private readonly prisma: PrismaService) {}
 
   async assertAccess(restaurantId: string, branchId: string): Promise<void> {
+    // Reject missing, repeated, empty, and padded values before Prisma can
+    // omit an undefined filter. Do not silently trim only the access check:
+    // downstream services must query the identical branch identifier.
+    if (typeof branchId !== 'string' || !branchId.trim() || branchId !== branchId.trim()) {
+      throw new BadRequestException('A non-empty branchId is required without surrounding whitespace');
+    }
+    if (typeof restaurantId !== 'string' || !restaurantId.trim()) {
+      throw new ForbiddenException('Restaurant not accessible');
+    }
     const branch = await this.prisma.branch.findFirst({
       where: { id: branchId, restaurantId },
       select: { id: true },

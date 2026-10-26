@@ -95,8 +95,10 @@ export class AuthController {
     return { user };
   }
 
+  @UseGuards(JwtAuthGuard)
   @Post('logout')
-  logout(@Res({ passthrough: true }) res: Response) {
+  async logout(@CurrentUser() user: SessionUser, @Res({ passthrough: true }) res: Response) {
+    await this.authService.logout(user.id);
     res.clearCookie(SESSION_COOKIE, {
       httpOnly: true,
       sameSite: 'lax',

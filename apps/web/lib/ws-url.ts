@@ -20,3 +20,9 @@ export function resolveWsUrl(): string {
   }
   return "http://localhost:4001";
 }
+
+// A Vercel frontend proxying to a persistent API can use polling to keep the
+// session cookie first-party without depending on proxy WebSocket upgrades.
+export function realtimeTransports(): ("polling" | "websocket")[] {
+  return process.env.NEXT_PUBLIC_SOCKET_TRANSPORT === "polling" ? ["polling"] : ["polling", "websocket"];
+}

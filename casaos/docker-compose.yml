@@ -23,7 +23,7 @@ services:
       - nodedr-restaurant-pos
 
   backend:
-    image: ghcr.io/raktim94/nodedr-restaurant-pos-backend:1.8.2
+    image: ghcr.io/m-faizanali/tablevora-backend:1.8.2
     container_name: nodedr-restaurant-pos-backend
     hostname: nodedr-restaurant-pos-backend
     restart: unless-stopped
@@ -82,7 +82,7 @@ services:
             en_US: Auto-generated login security key. Created automatically on first launch — leave it alone.
 
   web:
-    image: ghcr.io/raktim94/nodedr-restaurant-pos-web:1.8.2
+    image: ghcr.io/m-faizanali/tablevora-web:1.8.2
     container_name: nodedr-restaurant-pos-web
     hostname: nodedr-restaurant-pos-web
     restart: unless-stopped
@@ -98,7 +98,7 @@ services:
       ports:
         - container: "3000"
           description:
-            en_US: Nodedr OrderRestro web interface
+            en_US: Tablevora web interface
           protocol: tcp
 
   # In-app "Update now" (Settings > Updates): pulls the newer OrderRestro
@@ -144,12 +144,12 @@ x-casaos:
     - https://cdn.jsdelivr.net/gh/Raktim94/nodedr-restaurant-pos@master/casaos/screenshot-2.png
     - https://cdn.jsdelivr.net/gh/Raktim94/nodedr-restaurant-pos@master/casaos/screenshot-3.png
   title:
-    en_US: Nodedr OrderRestro
+    en_US: Tablevora
   tagline:
     en_US: Offline-first restaurant management — POS, kitchen display, tables, and reservations
   description:
     en_US: |
-      Nodedr OrderRestro is a free, open-source restaurant management system:
+      Tablevora is a free, open-source restaurant management system:
       point-of-sale ordering, a live kitchen display (KDS) split by station,
       table/floor management with QR-code table ordering, reservations and a
       waitlist, inventory with automatic ingredient deduction, customer CRM
