@@ -187,11 +187,11 @@ export default function DashboardPage() {
             {data?.recentOrders.map((order) => {
               const isOnline = ONLINE_ORDER_TYPES.has(order.type);
               return (
+                <div key={order.id} className="flex items-center gap-1">
                 <button
-                  key={order.id}
                   type="button"
                   onClick={() => setViewingOrderId(order.id)}
-                  className="flex items-center justify-between py-2.5 text-left text-sm transition hover:opacity-80"
+                  className="flex min-w-0 flex-1 items-center justify-between py-2.5 text-left text-sm transition hover:opacity-80"
                   title="View order details"
                 >
                   <div className="flex flex-col">
@@ -210,14 +210,15 @@ export default function DashboardPage() {
                     <span className="font-medium tabular-nums text-foreground">
                       {formatCurrency(order.totalAmount)}
                     </span>
+                  </div>
+                </button>
                     <RefundDialog
                       branchId={branchId}
                       orderId={order.id}
                       orderNumber={order.orderNumber}
                       maxAmount={Number(order.totalAmount)}
                     />
-                  </div>
-                </button>
+                </div>
               );
             })}
           </div>

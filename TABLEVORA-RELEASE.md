@@ -22,6 +22,9 @@
 - All 39 migrations applied successfully to a fresh dedicated PostgreSQL demo database; seed completed.
 - History secret scan: 207 commits scanned; eight findings manually reviewed as example bearer tokens and the NestJS template's dummy token. Real local credentials were removed from the untracked issue report before publication. The staged diff scan flagged only the deletion of that same dummy NestJS token.
 
+- Browser verification: signed in, selected Table 1, customized a pizza, submitted it to the kitchen, and recorded a fictional cash payment. Realtime queue and unread notification counters updated.
+- Fixed dashboard nested button markup, link button semantics, and the refund icon accessible label discovered during browser testing.
+
 ## Limits / follow-up
 
 This is not a certification or exhaustive security audit. Local and hosted end-to-end checks are reported separately. Original feature-checklist entries are historical: multi-tender settlement and notification sound already exist. Offline terminal-write synchronization, printer failover, and per-seat billing remain future product work. No claim is made that all roadmap items are implemented.

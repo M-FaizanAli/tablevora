@@ -52,6 +52,8 @@ pnpm audit
 
 See [release notes](TABLEVORA-RELEASE.md) for the exact checks performed and remaining limitations. [The original issue report](ISSUES-REPORT.md) and [historical audit](SECURITY-AUDIT-REPORT.md) provide context, not a current guarantee of security.
 
+See [the launch and client-service workflow](docs/LAUNCH-PLAN.md) for the portfolio, pilot, and commercial rollout.
+
 ## Service offering
 
 Tablevora can be customized and deployed for restaurants and cafés. Services include menu setup, workflow changes, deployment, training, and maintenance. Software licensing rights remain under AGPL; service agreements cover the work and support provided.
