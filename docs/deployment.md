@@ -27,6 +27,8 @@ The API needs `DATABASE_URL`, a unique `JWT_SECRET`, `PORT`, `CORS_ORIGIN` equal
 
 For a dedicated demo, set `DEMO_MODE=true`; run `node dist/prisma/seed.js` once after migrations. Never expose the seed operation as an HTTP route. No paid payment gateways are invoked by the demo's manual payment recording.
 
+Demo mode disables automatic background cron jobs (scheduled order dispatch, reports, webhooks, backups, and fiscal retries). Interactive orders and kitchen actions still work. The public `/api/health` endpoint does not query PostgreSQL, so an external API health check does not keep a serverless database computing while the demo is idle. Database queries resume on actual use; free quotas still apply.
+
 `render.yaml` describes an alternative backend/database deployment. The free demo uses an ephemeral uploads directory and blocks uploads; real client installations need a persistent upload volume and a durable database plan. Free hosting may sleep or expire: check the hosting account before presenting a live demo.
 
 ## Operational limits
