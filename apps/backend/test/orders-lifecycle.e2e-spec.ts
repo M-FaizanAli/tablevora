@@ -159,8 +159,8 @@ run('Orders: tables, cancel, bill edits, KOT printing (e2e)', () => {
           })
           .expect(201)
       ).body.id as string;
-    menuItemId = await mk('Paneer');
-    menuItem2Id = await mk('Naan');
+    menuItemId = await mk('Tacos');
+    menuItem2Id = await mk('Fries');
   });
 
   afterAll(async () => {
@@ -530,7 +530,7 @@ run('Orders: tables, cancel, bill edits, KOT printing (e2e)', () => {
       const paper = text(Buffer.concat(printer.jobs));
       expect(paper).toContain(`#${order.orderNumber}`);
       expect(paper).toContain('Table');
-      expect(paper).toContain('2 x Paneer');
+      expect(paper).toContain('2 x Tacos');
       expect(paper).toContain('NOTE: extra spicy');
       expect(paper).not.toContain('REPRINT');
 
@@ -588,8 +588,8 @@ run('Orders: tables, cancel, bill edits, KOT printing (e2e)', () => {
       await o().post(`/orders/${order.id}/print/kot${q}`).expect(201);
       await new Promise((r) => setTimeout(r, 100));
       const paper = text(Buffer.concat(printer.jobs));
-      expect(paper).toContain('1 x Naan');
-      expect(paper).not.toContain('Paneer');
+      expect(paper).toContain('1 x Fries');
+      expect(paper).not.toContain('Tacos');
     });
 
     it('a dead printer gives a clear error and the retry still prints once', async () => {

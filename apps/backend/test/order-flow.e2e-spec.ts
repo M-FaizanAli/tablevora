@@ -39,7 +39,7 @@ run('Order flow: accept, kitchen, bill, payment, roles (e2e)', () => {
   const events: { event: string; payload: any }[] = [];
   const agents: Record<string, Agent> = {};
   const tables: Record<string, string> = {};
-  let menuItemId: string; // 100.00 incl. 18% tax
+  let menuItemId: string; // 92.59 + 8% sales tax = 100.00 incl. (demo branch is EXCLUSIVE)
   let item2Id: string; // 50.00, no tax
 
   const call = (role: string) => ({
@@ -188,8 +188,8 @@ run('Order flow: accept, kitchen, bill, payment, roles (e2e)', () => {
           })
           .expect(201)
       ).body.id as string;
-    menuItemId = await mk('Paneer', 100, 18);
-    item2Id = await mk('Naan', 50, 0);
+    menuItemId = await mk('Fish Tacos', 92.59, 8);
+    item2Id = await mk('Fries', 50, 0);
   });
 
   afterAll(async () => {
@@ -449,12 +449,12 @@ run('Order flow: accept, kitchen, bill, payment, roles (e2e)', () => {
 
       const m = mark();
       const res = await kitchen.post(`/kds/tickets/${kot.id}/reject${q}`, {
-        reason: 'Out of paneer',
+        reason: 'Out of avocados',
       });
       expect(res.status).toBe(201);
       expect(res.body).toMatchObject({
         status: 'REJECTED',
-        rejectReason: 'Out of paneer',
+        rejectReason: 'Out of avocados',
       });
       expect(res.body.rejectedById).toBeTruthy();
       expect(res.body.rejectedAt).toBeTruthy();
@@ -462,7 +462,7 @@ run('Order flow: accept, kitchen, bill, payment, roles (e2e)', () => {
       const d = await detail(order.id); // never deleted
       expect(d.status).toBe('CANCELLED');
       expect(d.cancelSource).toBe('KITCHEN_REJECTED');
-      expect(d.cancelReason).toBe('Out of paneer');
+      expect(d.cancelReason).toBe('Out of avocados');
       expect(await tableStatus(tables.E)).toBe('AVAILABLE');
       expect(
         (await kitchen.get(`/kds/tickets${q}`).expect(200)).body.some(
@@ -475,7 +475,7 @@ run('Order flow: accept, kitchen, bill, payment, roles (e2e)', () => {
         where: { entity: 'Kot', entityId: kot.id, action: 'kot.rejected' },
       });
       expect(audit?.metadata).toMatchObject({
-        reason: 'Out of paneer',
+        reason: 'Out of avocados',
         wholeOrderCancelled: true,
       });
 
@@ -593,8 +593,8 @@ run('Order flow: accept, kitchen, bill, payment, roles (e2e)', () => {
   // ----------------------------------------------------------- bill + pay
   describe('bill, discount and payment', () => {
     let order: any;
-    const total = 200; // 2 x 100 incl. 18% tax
-    const taxAfter10 = 27.46; // 200 - 200/1.18 = 30.51, scaled by 0.9
+    const total = 200; // 2 x 100 incl. 8% tax
+    const taxAfter10 = 13.33; // 200 - 200/1.08 = 14.81, scaled by 0.9
 
     beforeAll(async () => {
       order = await newDineIn(tables.H);
@@ -659,8 +659,8 @@ run('Order flow: accept, kitchen, bill, payment, roles (e2e)', () => {
         expect(html.text).toContain('TOTAL DUE');
         expect(html.text).toContain('Bill only');
         expect(html.text).toContain('Discount (10%)');
-        expect(html.text).toContain('- ₹20.00');
-        expect(html.text).toContain('₹195.00');
+        expect(html.text).toContain('- $20.00');
+        expect(html.text).toContain('$195.00');
         expect(html.text).toContain('Balance due');
         expect(html.text).not.toContain('GRAND TOTAL');
       }
@@ -752,8 +752,8 @@ run('Order flow: accept, kitchen, bill, payment, roles (e2e)', () => {
         .get(`/orders/${order.id}/receipt${q}`)
         .expect(200);
       expect(html.text).toContain('Discount (10%)');
-      expect(html.text).toContain('₹100.00');
-      expect(html.text).toContain('₹80.00');
+      expect(html.text).toContain('$100.00');
+      expect(html.text).toContain('$80.00');
     });
 
     it('settles the balance with change due, then closes the bill and frees the table', async () => {

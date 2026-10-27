@@ -116,7 +116,7 @@ with sync_playwright() as pw:
     page.get_by_role("button", name="ES", exact=True).click()
 
     page.get_by_role("button", name="Drinks").click()
-    add(page, "Coca-Cola")
+    add(page, "Fresh Lemonade")
     # modifier item: required option must be chosen
     page.get_by_role("button", name="Main Course").click()
     add(page, "Margherita Pizza")
@@ -131,15 +131,16 @@ with sync_playwright() as pw:
     page.get_by_role("radio", name=re.compile("Extra Cheese")).click()
     page.get_by_role("button", name="Añadir al pedido").click()  # merges into one line, qty 2
     # search
-    page.get_by_placeholder("Buscar en la carta").fill("paneer")
-    expect(page.get_by_role("heading", name="Paneer Tikka")).to_be_visible()
+    page.get_by_placeholder("Buscar en la carta").fill("caesar")
+    expect(page.get_by_role("heading", name="Caesar Salad")).to_be_visible()
     page.get_by_placeholder("Buscar en la carta").fill("zzzz")
     expect(page.get_by_text("No hay resultados")).to_be_visible()
     page.get_by_role("button", name="Borrar búsqueda").click()
     page.screenshot(path=str(SHOTS / "kiosk-5-basket.png"))
     basket_text = page.locator("aside").inner_text()
     check("basket merges identical item+options into one line (x2)", "Margherita Pizza" in basket_text and re.search(r"\n2\n", basket_text) is not None, basket_text.replace("\n", " | ")[:140])
-    check("basket shows preview total (2x(420+60)+90 = 1.050,00 EUR)", re.search(r"1\.?050,00\s*€", basket_text) is not None)
+    # US demo, 8% sales tax added: 2 x (14 + 1.50) x 1.08 = 33.48, + 4.50 x 1.08 = 4.86 -> 38.34 (any currency format)
+    check("basket shows preview total (2x(14+1.50)+4.50, plus 8% tax = 38.34)", re.search(r"38[.,]34", basket_text) is not None)
 
     page.get_by_role("button", name="Revisar pedido").click()
     page.get_by_role("heading", name="Revisa tu pedido").wait_for()
@@ -205,7 +206,7 @@ with sync_playwright() as pw:
     sp.get_by_role("button", name="Bar", exact=True).click()
     sp.wait_for_timeout(800)
     bar_text = sp.locator("main, body").first.inner_text()
-    check("Bar station shows the Coca-Cola ticket", "Coca-Cola" in bar_text and "Margherita" not in bar_text)
+    check("Bar station shows the Fresh Lemonade ticket", "Fresh Lemonade" in bar_text and "Margherita" not in bar_text)
     sp.screenshot(path=str(SHOTS / "kds-2-bar-station.png"))
     sp.reload()
     sp.get_by_role("heading", name="Kitchen Display").wait_for()
@@ -219,7 +220,7 @@ with sync_playwright() as pw:
     kp.get_by_role("button", name="Toca la pantalla para empezar").click()
     kp.get_by_role("button", name="Para llevar").click()
     kp.get_by_role("button", name="Starters").wait_for()
-    add(kp, "Paneer Tikka")
+    add(kp, "Caesar Salad")
     kp.get_by_role("button", name="Revisar pedido").click()
     kp.get_by_role("button", name="Confirmar pedido").click()
     kp.get_by_role("heading", name="¡Pedido enviado!").wait_for(timeout=15000)
@@ -312,20 +313,20 @@ with sync_playwright() as pw:
     page = ctx.new_page()
     start_order(page)
     page.get_by_role("button", name="Drinks").click()
-    add(page, "Coca-Cola")
+    add(page, "Fresh Lemonade")
     page.get_by_role("button", name="Revisar pedido").first.click()
     page.route("**/api/v1/public/kiosk/*/order", lambda route: route.fulfill(
         status=409, content_type="application/json",
-        body='{"statusCode":409,"code":"ITEM_UNAVAILABLE","message":"x","unavailableItemIds":["demo-item-cola"]}'))
+        body='{"statusCode":409,"code":"ITEM_UNAVAILABLE","message":"x","unavailableItemIds":["demo-item-lemonade"]}'))
     page.get_by_role("button", name="Confirmar pedido").click()
-    expect(page.get_by_text("Ya no está disponible: Coca-Cola")).to_be_visible()
+    expect(page.get_by_text("Ya no está disponible: Fresh Lemonade")).to_be_visible()
     check("unavailable product: customer is told and the line is removed", page.get_by_text("Todavía no has añadido nada").count() == 1)
     page.screenshot(path=str(SHOTS / "kiosk-11-unavailable.png"))
     page.unroute("**/api/v1/public/kiosk/*/order")
 
     # offline: browser goes offline -> banner, confirm disabled, nothing sent
     page.get_by_role("button", name="Drinks").click()
-    add(page, "Coca-Cola")
+    add(page, "Fresh Lemonade")
     page.get_by_role("button", name="Revisar pedido").first.click()
     ctx.set_offline(True)
     expect(page.get_by_text("No se puede hacer pedidos hasta que vuelva la conexión.")).to_be_visible()

@@ -26,7 +26,7 @@ run('Kiosk API (e2e)', () => {
       .send({
         requestId: randomUUID(),
         serviceType: 'TAKEAWAY',
-        items: [{ menuItemId: 'demo-item-cola', quantity: 1, modifierIds: [] }],
+        items: [{ menuItemId: 'demo-item-lemonade', quantity: 1, modifierIds: [] }],
         ...over,
       });
 
@@ -71,7 +71,7 @@ run('Kiosk API (e2e)', () => {
           requestId,
           serviceType: 'DINE_IN',
           items: [
-            { menuItemId: 'demo-item-cola', quantity: 3, modifierIds: [] },
+            { menuItemId: 'demo-item-lemonade', quantity: 3, modifierIds: [] },
           ],
         });
     const results = await Promise.all([send(), send(), send(), send()]);
@@ -95,8 +95,8 @@ run('Kiosk API (e2e)', () => {
         ],
       })
       .expect(201);
-    // seeded: 420 + 60 extra cheese, x2
-    expect(Number(res.body.totalAmount)).toBe(960);
+    // seeded US demo: (14 + 1.50 extra cheese) pre-tax, +8% sales tax = 16.74, x2
+    expect(Number(res.body.totalAmount)).toBe(33.48);
     expect(res.body.paid).toBe(false);
     expect(res.body).not.toHaveProperty('id');
   });
@@ -123,7 +123,7 @@ run('Kiosk API (e2e)', () => {
         serviceType: 'DINE_IN',
         items: [
           {
-            menuItemId: 'demo-item-paneer-tikka',
+            menuItemId: 'demo-item-caesar-salad',
             quantity: 1,
             modifierIds: [],
           },

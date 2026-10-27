@@ -185,7 +185,7 @@ run('Role permissions (e2e)', () => {
         type: 'TAKEAWAY',
         items: [
           {
-            menuItemId: items.find((i) => i.id === 'demo-item-cola')!.id,
+            menuItemId: items.find((i) => i.id === 'demo-item-lemonade')!.id,
             quantity: 1,
           },
         ],

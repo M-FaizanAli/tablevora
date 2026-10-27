@@ -4,13 +4,10 @@ import { UtensilsCrossed } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
 
+// Seeded demo items that have a matching photo in /images/demo-menu.webp; the rest show the placeholder.
 const SAMPLE_POSITION: Record<string, [number, number]> = {
-  "demo-item-paneer-tikka": [0, 0],
-  "demo-item-chicken-65": [50, 0],
   "demo-item-margherita": [100, 0],
-  "demo-item-butter-chicken": [0, 100],
-  "demo-item-mojito": [50, 100],
-  "demo-item-cola": [100, 100],
+  "demo-item-lemonade": [50, 100], // the sprite's mint-and-lime glass
 };
 
 export function MenuItemImage({ item, className }: {

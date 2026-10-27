@@ -4,7 +4,7 @@ import { motion } from "motion/react";
 
 const tickets = [
   { table: "Table 4", items: ["2x Margherita", "1x Iced Latte"], status: "Preparing" },
-  { table: "Table 9", items: ["1x Butter Chicken", "2x Naan"], status: "Ready" },
+  { table: "Table 9", items: ["1x Cheeseburger", "2x Fries"], status: "Ready" },
   { table: "Takeaway #182", items: ["1x Cold Brew"], status: "New" },
 ];
 
