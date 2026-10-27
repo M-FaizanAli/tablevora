@@ -6,7 +6,7 @@
 - Fixed dashboard shell sizing/scrolling, POS category/product widths, table picker overflow and hover clipping, menu item name/price overflow, photo display/fallbacks, and laptop menu-table crowding. Tightened login spacing and chart currency-label space, and wrapped the kitchen progress strip at narrow widths.
 - Added six bundled sample dish images to the demo. Real menu photo add/replace/remove now goes through a size-limited raster pipeline and persists in PostgreSQL; demo users cannot change other menu fields. Disabled the custom vegetarian switch alongside the other read-only demo fields.
 - Desktop and 390 px phone browser review showed the POS photo grid/cart, responsive navigation, and 1024 px menu table fit without horizontal clipping. Menu photo editor is visible and read-only fields are disabled. Browser file-picker automation did not open the system picker, so a real file selection was not verified through the browser.
-- Frontend logic: 59 tests passed. Backend focused image/demo-guard tests: 23 passed. Types and frontend production build passed before the final breakpoint/disabled-switch adjustments; final build and full backend suite are running.
+- Frontend logic: 59 tests passed. Full backend suite: 256 passed, 13 database integration tests skipped without the opt-in integration database. Types and frontend production build passed after the final breakpoint and demo-read-only adjustments. The browser file-picker automation did not open the system picker, so the actual file selection path was instead exercised against the isolated local demo API: upload returned 201, photo update 200, and a fresh menu query read back the image; the original sample item was restored afterward.
 
 ## Implemented
 
