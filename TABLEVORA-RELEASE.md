@@ -32,3 +32,11 @@ This is not a certification or exhaustive security audit. Local and hosted end-t
 Single API replica is the initial deployment target. Multi-replica Socket.IO fan-out and global HTTP rate limiting need shared infrastructure. Hardware printing and legacy signed desktop packages require dedicated hardware/signing validation. Demo data is shared and should contain fictional information only.
 
 A web search screened the working name, but no trademark clearance or domain purchase was performed. Commercial services must preserve software users' AGPL rights.
+
+## Hosted database migration — 27 October 2026
+
+Neon Free PostgreSQL was provisioned through Vercel Marketplace in Portland, in the same region as the Render Free API. The live API connection uses Neon, with TLS and a small connection pool. The old Render database is retained only as a rollback copy and retains its original expiry. No paid database plan was selected.
+
+All 39 schema migrations applied. A snapshot of 77 application tables and 223 rows was copied while the API was suspended. Every row count and SHA-256 digest matched, with foreign keys checked before committing. Automatic reseeding is disabled. Demo-mode cron jobs are disabled to avoid idle database polling; interactive workflows remain enabled. The GitHub API health check does not query PostgreSQL.
+
+Hosted verification after cutover: API health returned HTTP 200; the public Vercel sign-in, tenant isolation, demo restrictions, logout token revocation, and disabled Swagger checks passed. The logout test changed the user record in Neon, confirming the live API's database target. Browser sign-in displayed the migrated three orders and ₹990 sample revenue.

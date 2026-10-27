@@ -35,6 +35,8 @@ For a **dedicated demo database only**, run `pnpm --filter @nodedr-restaurant/ba
 
 ## Deployment
 
+Hosted sample workspace: [Tablevora demo](https://tablevora.vercel.app/login). Use `owner@demo.local` / `Password123!` and fictional information only. The demo uses Vercel for the frontend, Render Free for the API, and Neon Free PostgreSQL provisioned through Vercel Marketplace. Free quotas and cold starts apply.
+
 See [the deployment guide](docs/deployment.md) for Docker, Vercel frontend, and persistent API hosting. The shared demo disables administrative configuration, integrations, system operations, and hardware printing while retaining operational workflows. It uses sample data; do not enter real customer information.
 
 For a real installation, keep `DEMO_MODE=false`, configure unique credentials, HTTPS, backups, and the correct local tax settings. Browser printing works remotely; direct USB/network printing needs a backend with access to the restaurant's devices.
