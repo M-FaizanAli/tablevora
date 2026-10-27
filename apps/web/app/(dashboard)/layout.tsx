@@ -23,13 +23,20 @@ function RealtimeBridge() {
   return null;
 }
 
-export default function DashboardGroupLayout({ children }: { children: React.ReactNode }) {
+export default function DashboardGroupLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   const router = useRouter();
   const pathname = usePathname();
   const { data, isLoading, isError } = useCurrentUser();
   const permissions = data?.user.permissions;
-  const allowed = !permissions || canOpen(pathname ?? "", permissions, NAV_ITEMS);
-  const fallback = permissions ? firstAllowedHref(permissions, NAV_ITEMS) : undefined;
+  const allowed =
+    !permissions || canOpen(pathname ?? "", permissions, NAV_ITEMS);
+  const fallback = permissions
+    ? firstAllowedHref(permissions, NAV_ITEMS)
+    : undefined;
 
   useEffect(() => {
     if (!isLoading && isError) {
@@ -44,7 +51,9 @@ export default function DashboardGroupLayout({ children }: { children: React.Rea
   }, [allowed, fallback, pathname, router]);
 
   if (isLoading) {
-    return <div className="flex min-h-screen items-center justify-center bg-background" />;
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-background" />
+    );
   }
 
   if (isError || !data) {
@@ -54,7 +63,9 @@ export default function DashboardGroupLayout({ children }: { children: React.Rea
   if (!allowed) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-background p-6 text-center text-sm text-muted-foreground">
-        {fallback ? "Redirecting…" : "Your role has no access to this page. Ask an administrator."}
+        {fallback
+          ? "Redirecting…"
+          : "Your role has no access to this page. Ask an administrator."}
       </div>
     );
   }
@@ -62,7 +73,9 @@ export default function DashboardGroupLayout({ children }: { children: React.Rea
   return (
     <BranchProvider>
       <RealtimeBridge />
-      <AppShell user={data.user}>{children}</AppShell>
+      <AppShell user={data.user} tenantStatus={data.tenantStatus}>
+        {children}
+      </AppShell>
     </BranchProvider>
   );
 }

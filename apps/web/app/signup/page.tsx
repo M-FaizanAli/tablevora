@@ -25,11 +25,32 @@ export default function SignupPage() {
     formState: { errors },
   } = useForm<RegisterDto>({ resolver: zodResolver(registerSchema) });
 
+  if (process.env.NEXT_PUBLIC_DEMO_MODE === "true") {
+    return (
+      <main className="flex min-h-screen items-center justify-center bg-background px-4">
+        <section className="max-w-md rounded-2xl border bg-card p-8 text-center">
+          <h1 className="text-2xl font-semibold">Signup is unavailable</h1>
+          <p className="mt-3 text-sm text-muted-foreground">
+            Restaurant signup is disabled on the shared Tablevora demo.
+          </p>
+          <Link
+            href="/login"
+            className="mt-5 inline-block text-primary underline"
+          >
+            Return to sign in
+          </Link>
+        </section>
+      </main>
+    );
+  }
+
   const onSubmit = (dto: RegisterDto) => {
     register.mutate(dto, {
-      onSuccess: () => router.push("/dashboard"),
+      onSuccess: () => router.push("/signup/pending"),
       onError: (err) => {
-        toast.error(err instanceof ApiError ? err.message : "Something went wrong");
+        toast.error(
+          err instanceof ApiError ? err.message : "Something went wrong",
+        );
       },
     });
   };
@@ -53,7 +74,9 @@ export default function SignupPage() {
           <h1 className="text-2xl font-semibold tracking-tight text-foreground">
             Tablevora
           </h1>
-          <p className="text-sm text-muted-foreground">Set up your restaurant</p>
+          <p className="text-sm text-muted-foreground">
+            Set up your restaurant
+          </p>
         </div>
 
         <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-5">
@@ -66,7 +89,9 @@ export default function SignupPage() {
               {...field("restaurantName")}
             />
             {errors.restaurantName && (
-              <p className="text-xs text-destructive">{errors.restaurantName.message}</p>
+              <p className="text-xs text-destructive">
+                {errors.restaurantName.message}
+              </p>
             )}
           </div>
 
@@ -79,7 +104,9 @@ export default function SignupPage() {
               {...field("branchName")}
             />
             {errors.branchName && (
-              <p className="text-xs text-destructive">{errors.branchName.message}</p>
+              <p className="text-xs text-destructive">
+                {errors.branchName.message}
+              </p>
             )}
           </div>
 
@@ -92,7 +119,9 @@ export default function SignupPage() {
               {...field("ownerName")}
             />
             {errors.ownerName && (
-              <p className="text-xs text-destructive">{errors.ownerName.message}</p>
+              <p className="text-xs text-destructive">
+                {errors.ownerName.message}
+              </p>
             )}
           </div>
 
@@ -105,31 +134,42 @@ export default function SignupPage() {
               placeholder="you@restaurant.com"
               {...field("email")}
             />
-            {errors.email && <p className="text-xs text-destructive">{errors.email.message}</p>}
+            {errors.email && (
+              <p className="text-xs text-destructive">{errors.email.message}</p>
+            )}
           </div>
 
           <div className="flex flex-col gap-2">
             <Label htmlFor="password">Password</Label>
             <PasswordInput
               id="password"
-              
+
               autoComplete="new-password"
               placeholder="At least 8 characters"
               {...field("password")}
             />
             {errors.password && (
-              <p className="text-xs text-destructive">{errors.password.message}</p>
+              <p className="text-xs text-destructive">
+                {errors.password.message}
+              </p>
             )}
           </div>
 
-          <Button type="submit" className="mt-2 h-11" disabled={register.isPending}>
+          <Button
+            type="submit"
+            className="mt-2 h-11"
+            disabled={register.isPending}
+          >
             {register.isPending ? "Creating your account…" : "Create account"}
           </Button>
         </form>
 
         <p className="mt-8 text-center text-xs text-muted-foreground">
           Already have an account?{" "}
-          <Link href="/login" className="font-medium text-foreground hover:underline">
+          <Link
+            href="/login"
+            className="font-medium text-foreground hover:underline"
+          >
             Sign in
           </Link>
         </p>

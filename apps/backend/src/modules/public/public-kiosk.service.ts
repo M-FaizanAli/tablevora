@@ -1,6 +1,7 @@
 import {
   BadRequestException,
   ConflictException,
+  ForbiddenException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
@@ -65,6 +66,10 @@ export class PublicKioskService {
 
   async createOrder(kioskToken: string, dto: KioskOrderDto) {
     const branch = await this.resolveBranch(kioskToken);
+    if (branch.restaurant.status && branch.restaurant.status !== 'ACTIVE')
+      throw new ForbiddenException(
+        'Online ordering is unavailable for this restaurant.',
+      );
     if (
       (dto.serviceType === 'DINE_IN' && !branch.kioskDineInEnabled) ||
       (dto.serviceType === 'TAKEAWAY' && !branch.kioskTakeawayEnabled)

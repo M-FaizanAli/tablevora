@@ -1,6 +1,7 @@
 import {
   CanActivate,
   ExecutionContext,
+  ForbiddenException,
   Injectable,
   UnauthorizedException,
 } from '@nestjs/common';
@@ -56,6 +57,19 @@ export class StaffApiKeyGuard implements CanActivate {
     if (!key.user.isActive) {
       throw new UnauthorizedException('Staff account is not active');
     }
+    const tenant = await this.prisma.restaurant.findUnique({
+      where: { id: key.user.restaurantId },
+      select: { status: true },
+    });
+    if (!tenant || tenant.status === 'PENDING' || tenant.status === 'DECLINED')
+      throw new ForbiddenException('This restaurant account is not active.');
+    if (
+      tenant.status === 'READ_ONLY' &&
+      !['GET', 'HEAD', 'OPTIONS'].includes(request.method)
+    )
+      throw new ForbiddenException(
+        'This restaurant is read only until platform access is restored.',
+      );
 
     const sessionUser: SessionUser = {
       id: key.user.id,

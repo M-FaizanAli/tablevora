@@ -45,6 +45,20 @@ export class IntegrationApiKeyGuard implements CanActivate {
       throw new UnauthorizedException('Invalid or revoked API key');
     }
 
+    const tenant = await this.prisma.restaurant.findUnique({
+      where: { id: key.restaurantId },
+      select: { status: true },
+    });
+    if (!tenant || tenant.status === 'PENDING' || tenant.status === 'DECLINED')
+      throw new ForbiddenException('This restaurant account is not active.');
+    if (
+      tenant.status === 'READ_ONLY' &&
+      !['GET', 'HEAD', 'OPTIONS'].includes(request.method)
+    )
+      throw new ForbiddenException(
+        'This restaurant is read only until platform access is restored.',
+      );
+
     const required = this.reflector.getAllAndOverride<string[]>(
       INTEGRATION_SCOPES_KEY,
       [context.getHandler(), context.getClass()],

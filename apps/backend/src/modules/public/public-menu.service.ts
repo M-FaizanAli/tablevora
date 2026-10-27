@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  ForbiddenException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import type { CartItemDto } from '@nodedr-restaurant/types';
 import { NotificationsService } from '../../notifications/notifications.service';
 import { PrismaService } from '../../prisma/prisma.service';
@@ -17,7 +21,9 @@ export class PublicMenuService {
   private async resolveTable(qrToken: string) {
     const table = await this.prisma.table.findUnique({
       where: { qrToken },
-      include: { floor: { include: { branch: true } } },
+      include: {
+        floor: { include: { branch: { include: { restaurant: true } } } },
+      },
     });
     if (!table) throw new NotFoundException('This QR code is not recognized');
     return table;
@@ -86,6 +92,13 @@ export class PublicMenuService {
   async createOrder(qrToken: string, items: CartItemDto[], guestName: string) {
     const table = await this.resolveTable(qrToken);
     const branchId = table.floor.branchId;
+    if (
+      table.floor.branch.restaurant.status &&
+      table.floor.branch.restaurant.status !== 'ACTIVE'
+    )
+      throw new ForbiddenException(
+        'Online ordering is unavailable for this restaurant.',
+      );
 
     // A guest who already ordered once this visit and scans again to add
     // more (e.g. drinks now, food later) should land on the same tab, not
@@ -136,6 +149,13 @@ export class PublicMenuService {
   /** Live status of the table's current tab, for the guest's QR page. */
   async getStatus(qrToken: string) {
     const table = await this.resolveTable(qrToken);
+    if (
+      table.floor.branch.restaurant.status &&
+      table.floor.branch.restaurant.status !== 'ACTIVE'
+    )
+      throw new ForbiddenException(
+        'Online ordering is unavailable for this restaurant.',
+      );
     const order = await this.prisma.order.findFirst({
       where: { tableId: table.id, status: { in: ['OPEN', 'BILLED'] } },
       orderBy: { createdAt: 'desc' },

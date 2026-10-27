@@ -41,7 +41,7 @@ enum TaxMode {
 }
 
 model Restaurant {
-  id        String  @id @default(cuid())
+  id        String                    @id @default(cuid())
   name      String
   legalName String?
   // The restaurant's own branding, shown in the app shell (sidebar header,
@@ -49,8 +49,9 @@ model Restaurant {
   // white-label self-hosted software, so the operator's brand should lead;
   // the product name stays as a small credit line instead (see BrandFooter).
   logoUrl   String?
-  currency  String  @default("INR")
-  timezone  String  @default("Asia/Kolkata")
+  currency  String                    @default("INR")
+  timezone  String                    @default("Asia/Kolkata")
+  status    RestaurantLifecycleStatus @default(ACTIVE)
 
   // UPI payee for the dynamic QR shown at checkout and on the customer
   // display (NPCI deep link, see apps/web/lib/upi.ts). Optional: when unset
@@ -68,13 +69,77 @@ model Restaurant {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  branches           Branch[]
-  roles              Role[]
-  users              User[]
-  integrationApiKeys IntegrationApiKey[]
-  webhookEndpoints   WebhookEndpoint[]
+  branches             Branch[]
+  roles                Role[]
+  users                User[]
+  integrationApiKeys   IntegrationApiKey[]
+  webhookEndpoints     WebhookEndpoint[]
+  platformAdminInvites PlatformAdminInvite[]
 
+  @@index([status, createdAt])
   @@map("restaurants")
+}
+
+enum RestaurantLifecycleStatus {
+  PENDING
+  ACTIVE
+  READ_ONLY
+  DECLINED
+}
+
+// Platform operators are deliberately separate from tenant staff identities.
+// The first and only v1 operator is created through a one-time bootstrap flow.
+model PlatformAdmin {
+  id                      String    @id @default(cuid())
+  email                   String    @unique
+  name                    String
+  passwordHash            String
+  isActive                Boolean   @default(true)
+  tokenVersion            Int       @default(0)
+  twoFactorSecret         String?
+  twoFactorEnabled        Boolean   @default(false)
+  twoFactorRecoveryHashes String[]  @default([])
+  twoFactorLastStep       Int?
+  failedTwoFactorAttempts Int       @default(0)
+  twoFactorLockedUntil    DateTime?
+  bootstrapChallengeHash  String?
+  bootstrapChallengeUntil DateTime?
+  createdAt               DateTime  @default(now())
+  updatedAt               DateTime  @updatedAt
+
+  auditEvents PlatformAdminAudit[]
+
+  @@map("platform_admins")
+}
+
+model PlatformAdminAudit {
+  id           String         @id @default(cuid())
+  actorId      String?
+  actor        PlatformAdmin? @relation(fields: [actorId], references: [id], onDelete: SetNull)
+  restaurantId String?
+  action       String
+  metadata     Json?
+  createdAt    DateTime       @default(now())
+
+  @@index([restaurantId, createdAt])
+  @@index([action, createdAt])
+  @@map("platform_admin_audits")
+}
+
+model PlatformAdminInvite {
+  id           String     @id @default(cuid())
+  restaurantId String
+  restaurant   Restaurant @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+  ownerId      String
+  owner        User       @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  tokenHash    String     @unique
+  expiresAt    DateTime
+  acceptedAt   DateTime?
+  revokedAt    DateTime?
+  createdAt    DateTime   @default(now())
+
+  @@index([ownerId, expiresAt])
+  @@map("platform_admin_invites")
 }
 
 model Branch {
@@ -240,14 +305,14 @@ model User {
   phone                   String?
   passwordHash            String
   pinHash                 String? // quick-switch PIN login on a shared terminal
-  isActive                Boolean  @default(true)
+  isActive                Boolean   @default(true)
   twoFactorSecret         String? // AES-GCM sealed TOTP secret (see auth/totp.ts)
-  twoFactorEnabled        Boolean  @default(false)
-  twoFactorRecoveryHashes String[] @default([]) // bcrypt hashes of unused one-time recovery codes
+  twoFactorEnabled        Boolean   @default(false)
+  twoFactorRecoveryHashes String[]  @default([]) // bcrypt hashes of unused one-time recovery codes
   twoFactorLastStep       Int? // last accepted TOTP step: a code works once
-  failedTwoFactorAttempts Int @default(0)
+  failedTwoFactorAttempts Int       @default(0)
   twoFactorLockedUntil    DateTime?
-  tokenVersion            Int @default(0)
+  tokenVersion            Int       @default(0)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -281,7 +346,8 @@ model User {
   backupsTriggered Backup[] @relation("BackupTriggeredBy")
 
   staffApiKeys              StaffApiKey[]
-  integrationApiKeysCreated IntegrationApiKey[] @relation("IntegrationApiKeyCreatedBy")
+  integrationApiKeysCreated IntegrationApiKey[]   @relation("IntegrationApiKeyCreatedBy")
+  platformAdminInvites      PlatformAdminInvite[]
 
   @@unique([restaurantId, email])
   @@index([restaurantId])

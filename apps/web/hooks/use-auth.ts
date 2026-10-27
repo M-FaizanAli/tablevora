@@ -1,13 +1,21 @@
 "use client";
 
-import { permissionSatisfied, type LoginDto, type RegisterDto, type SessionUser } from "@nodedr-restaurant/types";
+import {
+  permissionSatisfied,
+  type LoginDto,
+  type RegisterDto,
+  type SessionUser,
+} from "@nodedr-restaurant/types";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/api";
 
 export function useCurrentUser() {
   return useQuery({
     queryKey: ["auth", "me"],
-    queryFn: () => api.get<{ user: SessionUser }>("/auth/me"),
+    queryFn: () =>
+      api.get<{ user: SessionUser; tenantStatus?: "ACTIVE" | "READ_ONLY" }>(
+        "/auth/me",
+      ),
     retry: false,
   });
 }
@@ -15,7 +23,8 @@ export function useCurrentUser() {
 export function useLogin() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (dto: LoginDto) => api.post<{ user: SessionUser }>("/auth/login", dto),
+    mutationFn: (dto: LoginDto) =>
+      api.post<{ user: SessionUser }>("/auth/login", dto),
     onSuccess: (data) => {
       // Anything cached before this login belongs to nobody (or to the previous
       // user): drop it so branches and the rest load fresh for this account.
@@ -28,9 +37,10 @@ export function useLogin() {
 export function useRegister() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (dto: RegisterDto) => api.post<{ user: SessionUser }>("/auth/register", dto),
-    onSuccess: (data) => {
-      queryClient.setQueryData(["auth", "me"], data);
+    mutationFn: (dto: RegisterDto) =>
+      api.post<{ status: "PENDING" }>("/auth/register", dto),
+    onSuccess: () => {
+      queryClient.removeQueries({ queryKey: ["auth", "me"] });
     },
   });
 }
@@ -45,6 +55,9 @@ export function useLogout() {
   });
 }
 
-export function hasPermission(user: SessionUser | undefined, permission: string): boolean {
+export function hasPermission(
+  user: SessionUser | undefined,
+  permission: string,
+): boolean {
   return user ? permissionSatisfied(user.permissions, permission) : false;
 }

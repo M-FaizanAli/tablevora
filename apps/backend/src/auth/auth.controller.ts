@@ -56,11 +56,9 @@ export class AuthController {
   @UsePipes(new ZodValidationPipe(registerSchema))
   async register(
     @Body() body: unknown,
-    @Res({ passthrough: true }) res: Response,
+    @Res({ passthrough: true }) _res: Response,
   ) {
-    const { token, user } = await this.authService.register(body as never);
-    this.setSessionCookie(res, token);
-    return { user };
+    return this.authService.register(body as never);
   }
 
   // Tighter than the app-wide default (see register above) — login is a
@@ -97,7 +95,10 @@ export class AuthController {
 
   @UseGuards(JwtAuthGuard)
   @Post('logout')
-  async logout(@CurrentUser() user: SessionUser, @Res({ passthrough: true }) res: Response) {
+  async logout(
+    @CurrentUser() user: SessionUser,
+    @Res({ passthrough: true }) res: Response,
+  ) {
     await this.authService.logout(user.id);
     res.clearCookie(SESSION_COOKIE, {
       httpOnly: true,
@@ -153,8 +154,11 @@ export class AuthController {
 
   @UseGuards(JwtAuthGuard)
   @Get('me')
-  me(@CurrentUser() user: unknown) {
-    return { user };
+  async me(@CurrentUser() user: SessionUser) {
+    return {
+      user,
+      tenantStatus: await this.authService.lifecycleStatus(user.restaurantId),
+    };
   }
 
   // Public and unauthenticated — the marketing/login page needs this before

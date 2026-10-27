@@ -11,7 +11,7 @@ const branch = {
   isActive: true,
   kioskDineInEnabled: true,
   kioskTakeawayEnabled: true,
-  restaurant: { currency: 'EUR' },
+  restaurant: { currency: 'EUR', status: 'ACTIVE' },
 };
 
 const dec = (v: string) => new Prisma.Decimal(v);
@@ -97,6 +97,13 @@ describe('PublicKioskService', () => {
   });
 
   describe('createOrder', () => {
+    it('rejects public order creation while the tenant is read only', async () => {
+      const { service, prisma, ordersService } = build();
+      prisma.branch.findUnique.mockResolvedValueOnce({ ...branch, restaurant: { ...branch.restaurant, status: 'READ_ONLY' } });
+      await expect(service.createOrder(TOKEN, dto())).rejects.toMatchObject({ status: 403 });
+      expect(ordersService.createOrder).not.toHaveBeenCalled();
+    });
+
     it('creates a KIOSK order via the shared order rules, keyed by requestId', async () => {
       const { service, ordersService } = build();
       await service.createOrder(TOKEN, dto());

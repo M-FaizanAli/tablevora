@@ -21,6 +21,10 @@ services:
         value: "true"
       - key: DEMO_MODE
         value: "true"
+      - key: PLATFORM_ADMIN_ENABLED
+        value: "false"
+      - key: TENANT_SIGNUP_ENABLED
+        value: "false"
       - key: SEED_DEMO
         value: "false"
       - key: CORS_ORIGIN

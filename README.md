@@ -41,6 +41,20 @@ See [the deployment guide](docs/deployment.md) for Docker, Vercel frontend, and 
 
 For a real installation, keep `DEMO_MODE=false`, configure unique credentials, HTTPS, backups, and the correct local tax settings. Browser printing works remotely; direct USB/network printing needs a backend with access to the restaurant's devices.
 
+### Separate Tablevora client service and Platform Admin
+
+The public showcase remains a separate demo deployment. Its Render configuration explicitly sets `DEMO_MODE=true`, `TENANT_SIGNUP_ENABLED=false`, and `PLATFORM_ADMIN_ENABLED=false`. Do not point client tenants at the demo database.
+
+For a separate client SaaS deployment, provision a distinct API, PostgreSQL database, and Vercel project, then configure `DEMO_MODE=false`, `TENANT_SIGNUP_ENABLED=true`, `PLATFORM_ADMIN_ENABLED=true`, `PLATFORM_ADMIN_BOOTSTRAP_SECRET` and `PLATFORM_ADMIN_ENCRYPTION_KEY` (each at least 32 random characters), and a unique `JWT_SECRET`. Use HTTPS and set `COOKIE_SECURE=true`. The platform session signing key is derived separately from `JWT_SECRET`; TOTP secrets are encrypted at rest with the separate encryption key. Apply Prisma migrations before enabling traffic. Do not seed demo data.
+
+Once the production-only service is deployed, run the one-time setup at `/platform-admin/bootstrap` using the bootstrap secret and configure an authenticator before opening the console. Save the recovery codes offline. If the password or MFA is lost, run `pnpm --filter @nodedr-restaurant/backend platform-admin:recover` on the API host and follow its confirmation prompt, then bootstrap again. This retains audit rows while clearing the admin actor reference.
+
+New restaurant signup is held as `PENDING` and creates no session. Approval is required before the owner can sign in. `READ_ONLY` blocks tenant writes while keeping reads available. The admin console shows account metadata and platform audit events only; it has no access to restaurant orders, customer records, or sales reports.
+
+Platform Admin can also create a restaurant and its first owner directly. The tenant remains `PENDING`; the owner chooses their password through a one-time setup link that expires after seven days. Share the link with the owner directly; no email service is required. A new setup link can be issued for an owner who has not completed setup.
+
+The existing public demo is on free resources. A separate production-mode tenant service must be evaluated against current provider quotas before provisioning. This repository change does not create or upgrade any hosted resource; stop if the required separate deployment is not available on free tiers.
+
 ## Quality checks
 
 ```sh

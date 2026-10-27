@@ -58,11 +58,31 @@ export class RealtimeGateway
       const token = this.extractSessionCookie(client);
       if (!token) throw new Error('No session cookie');
 
-      const payload = this.jwt.verify<{ sub: string; tokenVersion: number; exp: number }>(token);
+      const payload = this.jwt.verify<{
+        sub: string;
+        tokenVersion: number;
+        exp: number;
+      }>(token);
       const user = await this.prisma.user.findUnique({
         where: { id: payload.sub },
       });
-      if (!user || !user.isActive || !Number.isInteger(payload.tokenVersion) || payload.tokenVersion !== user.tokenVersion) throw new Error('Session no longer valid');
+      if (
+        !user ||
+        !user.isActive ||
+        !Number.isInteger(payload.tokenVersion) ||
+        payload.tokenVersion !== user.tokenVersion
+      )
+        throw new Error('Session no longer valid');
+      const tenant = await this.prisma.restaurant.findUnique({
+        where: { id: user.restaurantId },
+        select: { status: true },
+      });
+      if (
+        !tenant ||
+        tenant.status === 'PENDING' ||
+        tenant.status === 'DECLINED'
+      )
+        throw new Error('Restaurant is not active');
 
       const branchId = client.handshake.query.branchId;
       if (typeof branchId !== 'string' || !branchId) {
@@ -81,15 +101,52 @@ export class RealtimeGateway
       // NOT everyone-in-branch, so it must never go out via emitToBranch.
       await client.join(this.userRoom(user.id));
       // Recheck after joining to close a logout-versus-handshake race.
-      const current = await this.prisma.user.findUnique({ where: { id: user.id } });
-      if (!current?.isActive || current.tokenVersion !== payload.tokenVersion) throw new Error('Session revoked');
-      const expiry = setTimeout(() => client.disconnect(true), Math.max(0, payload.exp * 1000 - Date.now()));
+      const current = await this.prisma.user.findUnique({
+        where: { id: user.id },
+      });
+      const currentTenant = current
+        ? await this.prisma.restaurant.findUnique({
+            where: { id: current.restaurantId },
+            select: { status: true },
+          })
+        : null;
+      if (
+        !current?.isActive ||
+        current.tokenVersion !== payload.tokenVersion ||
+        !currentTenant ||
+        currentTenant.status === 'PENDING' ||
+        currentTenant.status === 'DECLINED'
+      )
+        throw new Error('Session revoked');
+      const expiry = setTimeout(
+        () => client.disconnect(true),
+        Math.max(0, payload.exp * 1000 - Date.now()),
+      );
       const recheck = setInterval(() => {
-        void this.prisma.user.findUnique({ where: { id: user.id } }).then((u) => {
-          if (!u?.isActive || u.tokenVersion !== payload.tokenVersion) client.disconnect(true);
-        }).catch(() => client.disconnect(true));
+        void this.prisma.user
+          .findUnique({ where: { id: user.id } })
+          .then((u) => {
+            if (!u?.isActive || u.tokenVersion !== payload.tokenVersion) {
+              client.disconnect(true);
+              return;
+            }
+            void this.prisma.restaurant
+              .findUnique({
+                where: { id: u.restaurantId },
+                select: { status: true },
+              })
+              .then((r) => {
+                if (!r || r.status === 'PENDING' || r.status === 'DECLINED')
+                  client.disconnect(true);
+              })
+              .catch(() => client.disconnect(true));
+          })
+          .catch(() => client.disconnect(true));
       }, 30_000);
-      client.once('disconnect', () => { clearTimeout(expiry); clearInterval(recheck); });
+      client.once('disconnect', () => {
+        clearTimeout(expiry);
+        clearInterval(recheck);
+      });
     } catch (err) {
       this.logger.warn(
         `Rejecting realtime connection: ${err instanceof Error ? err.message : String(err)}`,

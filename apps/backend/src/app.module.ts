@@ -43,6 +43,7 @@ import { IntegrationsModule } from './integrations/integrations.module';
 import { McpModule } from './mcp/mcp.module';
 import { SystemModule } from './system/system.module';
 import { VerifactuModule } from './modules/verifactu/verifactu.module';
+import { PlatformAdminModule } from './platform-admin/platform-admin.controller';
 
 @Module({
   imports: [
@@ -88,6 +89,7 @@ import { VerifactuModule } from './modules/verifactu/verifactu.module';
     IntegrationsModule,
     McpModule,
     SystemModule,
+    PlatformAdminModule,
   ],
   controllers: [AppController],
   providers: [
