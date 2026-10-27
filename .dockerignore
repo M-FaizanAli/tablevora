@@ -10,4 +10,7 @@ dist
 .git
 .env
 .env.local
+**/.env
+**/.env.*
+!**/.env.example
 apps/backend/data
