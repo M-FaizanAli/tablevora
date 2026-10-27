@@ -55,15 +55,17 @@ function RestaurantBrand() {
 
 export function AppShell({
   user,
+  tenantStatus,
   children,
 }: {
   user?: SessionUser;
+  tenantStatus?: "ACTIVE" | "READ_ONLY";
   children: React.ReactNode;
 }) {
   const [mobileOpen, setMobileOpen] = useState(false);
 
   return (
-    <div className="flex min-h-screen bg-background">
+    <div className="flex h-dvh min-h-0 overflow-hidden bg-background">
       {/* Desktop sidebar */}
       <aside className="hidden w-64 shrink-0 flex-col border-r border-sidebar-border bg-sidebar lg:flex">
         <div className="flex h-16 items-center gap-2 px-5">
@@ -72,7 +74,7 @@ export function AppShell({
         <div className="px-3 pb-3">
           <BranchSwitcher />
         </div>
-        <div className="flex-1 overflow-y-auto py-2">
+        <div className="min-h-0 flex-1 overflow-y-auto py-2">
           <SidebarNav user={user} />
         </div>
         <BrandFooter />
@@ -88,15 +90,30 @@ export function AppShell({
           <div className="px-3 pb-3">
             <BranchSwitcher />
           </div>
-          <div className="flex-1 overflow-y-auto py-2">
+          <div className="min-h-0 flex-1 overflow-y-auto py-2">
             <SidebarNav user={user} onNavigate={() => setMobileOpen(false)} />
           </div>
           <BrandFooter />
         </SheetContent>
       </Sheet>
 
-      <div className="flex min-w-0 flex-1 flex-col">
-        {process.env.NEXT_PUBLIC_DEMO_MODE === "true" && <div className="bg-accent px-4 py-2 text-center text-xs text-accent-foreground">Tablevora demo · Shared sample data. Try orders and kitchen workflows. Administration is locked. Please use fictional information.</div>}
+      <div className="flex min-h-0 min-w-0 flex-1 flex-col">
+        {process.env.NEXT_PUBLIC_DEMO_MODE === "true" && (
+          <div className="bg-accent px-4 py-2 text-center text-xs text-accent-foreground">
+            Tablevora demo · Shared sample data. Try orders and kitchen
+            workflows. Administration is locked. Please use fictional
+            information.
+          </div>
+        )}
+        {tenantStatus === "READ_ONLY" && (
+          <div
+            role="status"
+            className="border-b border-amber-300 bg-amber-50 px-4 py-2 text-center text-sm text-amber-950"
+          >
+            This restaurant is in read-only mode. You can view records, but
+            changes are paused until access is restored.
+          </div>
+        )}
         <header className="flex h-16 shrink-0 items-center justify-between border-b border-border bg-background/80 px-4 backdrop-blur sm:px-6">
           <button
             type="button"
@@ -113,7 +130,11 @@ export function AppShell({
             <UserMenu user={user} />
           </div>
         </header>
-        <main className="flex-1 overflow-y-auto p-4 pb-24 sm:p-6 sm:pb-24 lg:p-8">{children}</main>
+        <main className="min-h-0 flex-1 overflow-y-auto px-4 pt-5 pb-[calc(5.5rem+env(safe-area-inset-bottom))] sm:px-6 lg:p-6">
+          <div className="mx-auto flex h-full w-full max-w-[1600px] flex-col">
+            {children}
+          </div>
+        </main>
         <EntityDialogHost />
       </div>
       <MobileBottomNav user={user} onMore={() => setMobileOpen(true)} />

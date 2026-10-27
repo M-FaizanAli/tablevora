@@ -13,6 +13,8 @@ export class DemoGuard implements CanActivate {
       throw new ForbiddenException('This feature is disabled in the shared demo.');
     }
     if (['GET', 'HEAD', 'OPTIONS'].includes(req.method)) return true;
+    if (req.method === 'POST' && path === '/api/v1/menu/items/upload-image') return true;
+    if (req.method === 'PATCH' && /^\/api\/v1\/menu\/items\/[^/]+\/photo$/.test(path)) return true;
     const operational = [
       /^\/api\/v1\/auth\/(login|logout)$/,
       /^\/api\/v1\/orders$/,

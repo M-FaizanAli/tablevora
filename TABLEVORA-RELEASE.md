@@ -1,5 +1,13 @@
 # Tablevora launch work — 26 October 2026
 
+## Visual and menu-photo follow-up — 27 October 2026
+
+- Replaced the padded raster nav mark with a vector master and regenerated app icons/favicon from the same geometry.
+- Fixed dashboard shell sizing/scrolling, POS category/product widths, table picker overflow and hover clipping, menu item name/price overflow, photo display/fallbacks, and laptop menu-table crowding. Tightened login spacing and chart currency-label space, and wrapped the kitchen progress strip at narrow widths.
+- Added six bundled sample dish images to the demo. Real menu photo add/replace/remove now goes through a size-limited raster pipeline and persists in PostgreSQL; demo users cannot change other menu fields. Disabled the custom vegetarian switch alongside the other read-only demo fields.
+- Desktop and 390 px phone browser review showed the POS photo grid/cart, responsive navigation, and 1024 px menu table fit without horizontal clipping. Menu photo editor is visible and read-only fields are disabled. Browser file-picker automation did not open the system picker, so a real file selection was not verified through the browser.
+- Frontend logic: 59 tests passed. Full backend suite: 256 passed, 13 database integration tests skipped without the opt-in integration database. Types and frontend production build passed after the final breakpoint and demo-read-only adjustments. The browser file-picker automation did not open the system picker, so the actual file selection path was instead exercised against the isolated local demo API: upload returned 201, photo update 200, and a fresh menu query read back the image; the original sample item was restored afterward.
+
 ## Implemented
 
 - Tablevora identity: generated logo, app icons, green/cream/mint light and dark palettes, Outfit/Geist typography, new public landing and sign-in layout.
@@ -32,3 +40,11 @@ This is not a certification or exhaustive security audit. Local and hosted end-t
 Single API replica is the initial deployment target. Multi-replica Socket.IO fan-out and global HTTP rate limiting need shared infrastructure. Hardware printing and legacy signed desktop packages require dedicated hardware/signing validation. Demo data is shared and should contain fictional information only.
 
 A web search screened the working name, but no trademark clearance or domain purchase was performed. Commercial services must preserve software users' AGPL rights.
+
+## Hosted database migration — 27 October 2026
+
+Neon Free PostgreSQL was provisioned through Vercel Marketplace in Portland, in the same region as the Render Free API. The live API connection uses Neon, with TLS and a small connection pool. The old Render database is retained only as a rollback copy and retains its original expiry. No paid database plan was selected.
+
+All 39 schema migrations applied. A snapshot of 77 application tables and 223 rows was copied while the API was suspended. Every row count and SHA-256 digest matched, with foreign keys checked before committing. Automatic reseeding is disabled. Demo-mode cron jobs are disabled to avoid idle database polling; interactive workflows remain enabled. The GitHub API health check does not query PostgreSQL.
+
+Hosted verification after cutover: API health returned HTTP 200; the public Vercel sign-in, tenant isolation, demo restrictions, logout token revocation, and disabled Swagger checks passed. The logout test changed the user record in Neon, confirming the live API's database target. Browser sign-in displayed the migrated three orders and ₹990 sample revenue.

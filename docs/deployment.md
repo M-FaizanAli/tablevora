@@ -27,7 +27,13 @@ The API needs `DATABASE_URL`, a unique `JWT_SECRET`, `PORT`, `CORS_ORIGIN` equal
 
 For a dedicated demo, set `DEMO_MODE=true`; run `node dist/prisma/seed.js` once after migrations. Never expose the seed operation as an HTTP route. No paid payment gateways are invoked by the demo's manual payment recording.
 
-`render.yaml` describes an alternative backend/database deployment. The free demo uses an ephemeral uploads directory and blocks uploads; real client installations need a persistent upload volume and a durable database plan. Free hosting may sleep or expire: check the hosting account before presenting a live demo.
+Demo mode disables automatic background cron jobs (scheduled order dispatch, reports, webhooks, backups, and fiscal retries). Interactive orders and kitchen actions still work. The public `/api/health` endpoint does not query PostgreSQL, so an external API health check does not keep a serverless database computing while the demo is idle. Database queries resume on actual use; free quotas still apply.
+
+`render.yaml` describes the free demo API and asks for an external `DATABASE_URL`; it does not create an expiring Render PostgreSQL database. The hosted demo uses Neon Free through Vercel Marketplace. Keep that connection in Render's secret environment settings, never in the repository. For this persistent Prisma API, use the direct Neon URL with TLS and a small connection limit. The startup command applies migrations. `SEED_DEMO=false` preserves existing migrated data; run the demo seed explicitly only for a new, empty sample database.
+
+The free demo permits menu-photo changes only. Raster uploads are resized in the browser and stored as bounded data URLs in PostgreSQL, so they survive API restarts and Render's ephemeral filesystem. Other uploads remain blocked in demo mode. Real client installations can use the normal upload path with a persistent uploads volume and database backups. Neon may suspend idle compute and resume on the next query; this does not delete stored data. Do not ping the database continuously: that consumes its monthly free compute allowance. The API's database-free health endpoint is enough for the server keep-alive.
+
+`.github/workflows/demo-health.yml` checks `https://tablevora-api.onrender.com/api/health` every ten minutes and supports manual runs. Public GitHub schedules can be delayed or disabled after prolonged repository inactivity; this is a best-effort demo check, not an uptime guarantee. Render's free instance-hour limits and Neon's free storage/compute limits still apply. No paid upgrade or automatic top-up is configured by this deployment.
 
 ## Operational limits
 

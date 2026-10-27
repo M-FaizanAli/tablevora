@@ -67,10 +67,31 @@ export class AuthService {
       await this.twoFactor.verifyLogin(user, dto.totp);
     }
 
+    const restaurant = await this.prisma.restaurant.findUnique({
+      where: { id: user.restaurantId },
+      select: { status: true },
+    });
+    if (
+      !restaurant ||
+      restaurant.status === 'PENDING' ||
+      restaurant.status === 'DECLINED'
+    ) {
+      throw new UnauthorizedException(
+        'This restaurant account is awaiting platform approval or is unavailable',
+      );
+    }
     return this.issueSession(user);
   }
 
   async register(dto: RegisterDto) {
+    if (
+      process.env.TENANT_SIGNUP_ENABLED !== 'true' ||
+      process.env.DEMO_MODE === 'true'
+    ) {
+      throw new UnauthorizedException(
+        'Restaurant signup is not available on this service.',
+      );
+    }
     const existing = await this.prisma.user.findFirst({
       where: { email: dto.email },
     });
@@ -94,9 +115,9 @@ export class AuthService {
 
     const passwordHash = await bcrypt.hash(dto.password, 12);
 
-    const owner = await this.prisma.$transaction(async (tx) => {
+    await this.prisma.$transaction(async (tx) => {
       const restaurant = await tx.restaurant.create({
-        data: { name: dto.restaurantName },
+        data: { name: dto.restaurantName, status: 'PENDING' },
       });
       const branch = await tx.branch.create({
         data: { restaurantId: restaurant.id, name: dto.branchName },
@@ -145,7 +166,7 @@ export class AuthService {
       return user;
     });
 
-    return this.issueSession(owner);
+    return { status: 'PENDING' as const };
   }
 
   async hasAnyRestaurant(): Promise<boolean> {
@@ -153,6 +174,14 @@ export class AuthService {
       select: { id: true },
     });
     return restaurant !== null;
+  }
+
+  async lifecycleStatus(restaurantId: string) {
+    const restaurant = await this.prisma.restaurant.findUnique({
+      where: { id: restaurantId },
+      select: { status: true },
+    });
+    return restaurant?.status ?? null;
   }
 
   async pinLogin(dto: PinLoginDto) {
@@ -178,20 +207,42 @@ export class AuthService {
       throw new UnauthorizedException('Incorrect PIN');
     }
 
+    const restaurant = await this.prisma.restaurant.findUnique({
+      where: { id: user.restaurantId },
+      select: { status: true },
+    });
+    if (
+      !restaurant ||
+      restaurant.status === 'PENDING' ||
+      restaurant.status === 'DECLINED'
+    ) {
+      throw new UnauthorizedException(
+        'This restaurant account is awaiting platform approval or is unavailable',
+      );
+    }
+
     return this.issueSession(user);
   }
 
   async logout(userId: string) {
     // Logging out revokes all sessions for this account, including copied JWTs.
-    await this.prisma.user.update({ where: { id: userId }, data: { tokenVersion: { increment: 1 } } });
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: { tokenVersion: { increment: 1 } },
+    });
     this.realtime.disconnectUser(userId);
   }
 
   private async issueSession(
-    user: Parameters<AuthService['toSessionUser']>[0] & { tokenVersion: number },
+    user: Parameters<AuthService['toSessionUser']>[0] & {
+      tokenVersion: number;
+    },
   ) {
     const sessionUser = this.toSessionUser(user);
-    const token = await this.jwt.signAsync({ sub: user.id, tokenVersion: user.tokenVersion });
+    const token = await this.jwt.signAsync({
+      sub: user.id,
+      tokenVersion: user.tokenVersion,
+    });
     return { token, user: sessionUser };
   }
 }

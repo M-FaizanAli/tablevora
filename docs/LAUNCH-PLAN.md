@@ -8,7 +8,7 @@ The public repository is https://github.com/M-FaizanAli/tablevora. Publish only 
 
 ## 2. Complete the hosted demo
 
-Deploy the Render blueprint for the persistent API and PostgreSQL. Configure the Vercel frontend with that API URL before building; use the polling transport through the same-origin proxy. Set the API CORS origin to the final frontend URL and enable secure cookies. Use dedicated demo credentials and the demo guard.
+Deploy the API on Render Free and use Neon Free PostgreSQL through Vercel Marketplace; the Render blueprint intentionally expects an externally configured database URL. Configure the Vercel frontend with that API URL before building; use the polling transport through the same-origin proxy. Set the API CORS origin to the final frontend URL and enable secure cookies. Use dedicated demo credentials and the demo guard. The shared demo API and database can cold-start; no paid resources are configured.
 
 Before sharing, verify HTTPS, sign-in, table selection, item modifiers, kitchen receipt, payment recording, logout, tenant isolation, and blocked administrative actions on the hosted environment. Confirm that the API/database plan remains active and that the cold-start behavior is suitable for demonstrations. Keep one API replica initially.
 

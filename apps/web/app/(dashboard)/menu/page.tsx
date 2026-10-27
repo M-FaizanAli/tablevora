@@ -7,6 +7,7 @@ import { AddCategoryDialog } from "@/components/menu/add-category-dialog";
 import { AddItemDialog } from "@/components/menu/add-item-dialog";
 import { ComboComponentsDialog } from "@/components/menu/combo-components-dialog";
 import { EditCategoryDialog } from "@/components/menu/edit-category-dialog";
+import { MenuItemImage } from "@/components/menu/menu-item-image";
 import { EditItemDialog } from "@/components/menu/edit-item-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -40,6 +41,8 @@ export default function MenuPage() {
   const { data: me } = useCurrentUser();
   // menu.view alone is read-only; every edit control needs menu.manage.
   const canManage = hasPermission(me?.user, "menu.manage");
+  const demoPhotosOnly = process.env.NEXT_PUBLIC_DEMO_MODE === "true";
+  const canConfigure = canManage && !demoPhotosOnly;
   const { data: categories, isLoading: categoriesLoading } = useCategories(branchId);
   const [selectedCategoryId, setSelectedCategoryId] = useState<string | undefined>(undefined);
   const { data: items, isLoading: itemsLoading } = useMenuItems(branchId, selectedCategoryId);
@@ -71,11 +74,11 @@ export default function MenuPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-[32px] font-semibold tracking-tight text-foreground">Menu</h1>
-          <p className="text-sm text-muted-foreground">{canManage ? "Categories, items, and pricing" : "Categories, items, and pricing (view only)"}</p>
+          <p className="text-sm text-muted-foreground">{demoPhotosOnly ? "Tap an item photo to change it. Other menu settings are read-only in this demo." : canConfigure ? "Categories, items, and pricing" : "Categories, items, and pricing (view only)"}</p>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-[260px_1fr]">
+      <div className="grid grid-cols-1 gap-6 xl:grid-cols-[260px_minmax(0,1fr)]">
         <Card className="flex flex-col gap-3 p-4">
           <div className="flex items-center justify-between px-1">
             <h2 className="text-[13px] font-medium uppercase tracking-wide text-muted-foreground">
@@ -110,7 +113,7 @@ export default function MenuPage() {
                       </span>
                     )}
                   </span>
-                  {canManage && (
+                  {canConfigure && (
 <div className="flex shrink-0 gap-1">
                     <Button variant="ghost" size="sm" className="h-10 gap-1.5 px-3" onClick={() => setEditingCategory(selectedCategory)}>
                       <Pencil className="h-4 w-4" /> Edit
@@ -157,10 +160,10 @@ export default function MenuPage() {
                       <span className="sr-only">Hidden from website</span>
                     </span>
                   )}
-                  <span className={cn("shrink-0 text-xs text-muted-foreground", canManage && "group-hover:hidden")}>
+                  <span className={cn("shrink-0 text-xs text-muted-foreground", canConfigure && "group-hover:hidden")}>
                     {cat._count.items}
                   </span>
-                  {canManage && (
+                  {canConfigure && (
 <div className="hidden shrink-0 items-center gap-0.5 group-hover:flex">
                     <Button
                       variant="ghost"
@@ -188,13 +191,13 @@ export default function MenuPage() {
             </>
           )}
 
-          {canManage && <AddCategoryDialog branchId={branchId} />}
+          {canConfigure && <AddCategoryDialog branchId={branchId} />}
         </Card>
 
         <Card className="flex flex-col gap-4 p-4 sm:p-6">
           <div className="flex items-center justify-between">
             <h2 className="text-[18px] font-medium text-foreground">Items</h2>
-            {canManage && <AddItemDialog branchId={branchId} categories={categories ?? []} />}
+            {canConfigure && <AddItemDialog branchId={branchId} categories={categories ?? []} />}
           </div>
 
           {itemsLoading ? (
@@ -209,12 +212,7 @@ export default function MenuPage() {
               {items.map((item) => (
                 <li key={item.id} className="flex flex-col gap-2 py-3 first:pt-0">
                   <div className="flex items-start gap-3">
-                    {item.imageUrl ? (
-                      // eslint-disable-next-line @next/next/no-img-element -- uploaded asset served from the backend, not a Next-optimizable remote source
-                      <img src={item.imageUrl} alt="" className="h-12 w-12 shrink-0 rounded-md object-cover" />
-                    ) : (
-                      <div className="h-12 w-12 shrink-0 rounded-md bg-secondary" />
-                    )}
+                    <button type="button" disabled={!canManage} onClick={() => setEditingItem(item)} aria-label={`Change photo for ${item.name}`} className="shrink-0 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"><MenuItemImage item={item} className="h-12 w-12 rounded-lg" /></button>
                     <div className="min-w-0 flex-1">
                       <p className="flex items-center gap-1.5 text-sm font-medium text-foreground">
                         {item.isVeg && <Leaf className="h-3.5 w-3.5 shrink-0 text-success" />}
@@ -228,7 +226,7 @@ export default function MenuPage() {
                     </div>
                     <p className="shrink-0 text-sm font-semibold tabular-nums text-foreground">{formatCurrency(item.price)}</p>
                   </div>
-                  {canManage && (
+                  {canConfigure && (
 <div className="flex justify-end gap-1">
                     <Button variant="outline" size="sm" className={cn("h-10 gap-1.5 px-3", item.isCombo && "text-primary")} onClick={() => setComboItem(item)}>
                       <Layers className="h-4 w-4" /> Combo
@@ -273,16 +271,7 @@ export default function MenuPage() {
                   <TableRow key={item.id}>
                     <TableCell className="font-medium text-foreground">
                       <div className="flex items-center gap-3">
-                        {item.imageUrl ? (
-                          // eslint-disable-next-line @next/next/no-img-element -- uploaded asset served from the backend, not a Next-optimizable remote source
-                          <img
-                            src={item.imageUrl}
-                            alt=""
-                            className="h-9 w-9 shrink-0 rounded-md object-cover"
-                          />
-                        ) : (
-                          <div className="h-9 w-9 shrink-0 rounded-md bg-secondary" />
-                        )}
+                        <button type="button" disabled={!canManage} onClick={() => setEditingItem(item)} aria-label={`Change photo for ${item.name}`} className="shrink-0 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"><MenuItemImage item={item} className="h-10 w-10 rounded-lg" /></button>
                         {item.isVeg && <Leaf className="h-3.5 w-3.5 shrink-0 text-success" />}
                         {item.name}
                       </div>
@@ -304,7 +293,7 @@ export default function MenuPage() {
                       {Number(item.taxRatePercent)}%
                     </TableCell>
                     <TableCell>
-                      {canManage && (
+                      {canConfigure && (
 <div className="flex items-center justify-end gap-1">
                         <Button
                           variant="ghost"

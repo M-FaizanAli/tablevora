@@ -1,7 +1,7 @@
 "use client";
 
 import { ImagePlus, X } from "lucide-react";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import {
@@ -30,6 +30,7 @@ import {
 } from "@/hooks/use-menu";
 import { useSettings } from "@/hooks/use-settings";
 import { ApiError } from "@/lib/api";
+import { prepareMenuImage } from "@/lib/prepare-menu-image";
 
 export function AddItemDialog({
   branchId,
@@ -46,9 +47,11 @@ export function AddItemDialog({
   const [halfPrice, setHalfPrice] = useState("");
   const [taxRatePercent, setTaxRatePercent] = useState("5");
   const [isVeg, setIsVeg] = useState(true);
-  const [imageUrl, setImageUrl] = useState<string | undefined>(undefined);
+  const [imageUrl, setImageUrl] = useState<string | null>(null);
   const [imagePreview, setImagePreview] = useState<string | undefined>(undefined);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [preparingPhoto, setPreparingPhoto] = useState(false);
+  useEffect(() => () => { if (imagePreview?.startsWith('blob:')) URL.revokeObjectURL(imagePreview); }, [imagePreview]);
 
   const { data: stations } = useStations(branchId);
   const { data: settings } = useSettings(branchId);
@@ -64,22 +67,26 @@ export function AddItemDialog({
     setPrice("");
     setTaxRatePercent("5");
     setIsVeg(true);
-    setImageUrl(undefined);
+    setImageUrl(null);
     setImagePreview(undefined);
     if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
-  const onFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const onFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
+    e.target.value = '';
     if (!file) return;
-    setImagePreview(URL.createObjectURL(file));
-    uploadImage.mutate(file, {
-      onSuccess: (res) => setImageUrl(res.url),
-      onError: (err) => {
-        toast.error(err instanceof ApiError ? err.message : "Could not upload image");
-        setImagePreview(undefined);
-      },
-    });
+    setPreparingPhoto(true);
+    try {
+      const prepared = await prepareMenuImage(file);
+      setImagePreview(URL.createObjectURL(prepared));
+      const result = await uploadImage.mutateAsync(prepared);
+      setImageUrl(result.url);
+      setImagePreview(result.url);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Could not upload image');
+      setImagePreview(imageUrl ?? undefined);
+    } finally { setPreparingPhoto(false); }
   };
 
   const onSubmit = (e: React.FormEvent) => {
@@ -155,7 +162,7 @@ export function AddItemDialog({
                 <button
                   type="button"
                   onClick={() => {
-                    setImageUrl(undefined);
+                    setImageUrl(null);
                     setImagePreview(undefined);
                     if (fileInputRef.current) fileInputRef.current.value = "";
                   }}
@@ -164,9 +171,9 @@ export function AddItemDialog({
                 >
                   <X className="h-3.5 w-3.5" />
                 </button>
-                {uploadImage.isPending && (
+                {(uploadImage.isPending || preparingPhoto) && (
                   <div className="absolute inset-0 flex items-center justify-center bg-background/60 text-xs">
-                    Uploading…
+                    Preparing photo…
                   </div>
                 )}
               </div>
@@ -180,6 +187,8 @@ export function AddItemDialog({
                 <span className="text-xs">Add photo</span>
               </button>
             )}
+            {imagePreview && <Button type="button" variant="outline" size="sm" className="mt-2 self-start" disabled={preparingPhoto} onClick={() => fileInputRef.current?.click()}>Change photo</Button>}
+            <p className="text-xs text-muted-foreground">Photos are resized automatically and saved with your menu.</p>
           </div>
 
           <div className="flex flex-col gap-2">
@@ -278,7 +287,7 @@ export function AddItemDialog({
           </div>
 
           <DialogFooter>
-            <Button type="submit" disabled={createItem.isPending || uploadImage.isPending}>
+            <Button type="submit" disabled={createItem.isPending || uploadImage.isPending || preparingPhoto}>
               {createItem.isPending ? "Adding…" : "Add item"}
             </Button>
           </DialogFooter>

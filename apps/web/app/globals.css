@@ -68,8 +68,8 @@
   --accent: #E4F3EA;
   --accent-foreground: #17634B;
   --destructive: #EF4444;
-  --success: #22C55E;
-  --warning: #F59E0B;
+  --success: #15803D;
+  --warning: #B45309;
   --border: #DDE4DA;
   --input: #CBD8CD;
   --ring: #17634B;
@@ -254,15 +254,15 @@
   }
   body {
     background-image:
-      radial-gradient(60rem 28rem at 100% -10%, rgb(159 18 57 / 0.045), transparent 60%),
-      radial-gradient(48rem 24rem at -10% 110%, rgb(245 158 11 / 0.035), transparent 60%);
+      radial-gradient(60rem 28rem at 100% -10%, rgb(23 99 75 / 0.045), transparent 60%),
+      radial-gradient(48rem 24rem at -10% 110%, rgb(169 232 200 / 0.08), transparent 60%);
     background-attachment: fixed;
   }
   h1, h2, h3 {
     letter-spacing: -0.015em;
   }
   ::selection {
-    background: rgb(159 18 57 / 0.18);
+    background: rgb(23 99 75 / 0.18);
   }
   :focus-visible {
     outline: 2px solid var(--ring);
@@ -310,7 +310,7 @@
   [data-slot="button"][data-variant="default"],
   button[data-slot="button"].bg-primary {
     background-image: var(--gradient-primary);
-    box-shadow: 0 1px 0 rgb(255 255 255 / 0.18) inset, 0 6px 14px -6px rgb(159 18 57 / 0.55);
+    box-shadow: 0 1px 0 rgb(255 255 255 / 0.18) inset, 0 6px 14px -6px rgb(23 99 75 / 0.55);
     transition: filter 150ms ease, transform 150ms ease, box-shadow 150ms ease;
   }
   [data-slot="button"][data-variant="default"]:hover:not(:disabled) {

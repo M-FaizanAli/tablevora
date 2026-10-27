@@ -43,11 +43,15 @@ import { IntegrationsModule } from './integrations/integrations.module';
 import { McpModule } from './mcp/mcp.module';
 import { SystemModule } from './system/system.module';
 import { VerifactuModule } from './modules/verifactu/verifactu.module';
+import { PlatformAdminModule } from './platform-admin/platform-admin.controller';
 
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
-    ScheduleModule.forRoot(),
+    // The shared showcase has no automatic integrations or dispatch jobs.
+    // Avoid idle database polling consuming a serverless database's free quota;
+    // the public /api/health keep-alive does not query PostgreSQL.
+    ScheduleModule.forRoot({ cronJobs: process.env.DEMO_MODE !== 'true' }),
     ThrottlerModule.forRoot([{ ttl: 60_000, limit: 300 }]),
     PrismaModule,
     RealtimeModule,
@@ -85,6 +89,7 @@ import { VerifactuModule } from './modules/verifactu/verifactu.module';
     IntegrationsModule,
     McpModule,
     SystemModule,
+    PlatformAdminModule,
   ],
   controllers: [AppController],
   providers: [

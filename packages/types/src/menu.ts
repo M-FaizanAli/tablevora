@@ -35,7 +35,7 @@ export const menuItemSchema = z.object({
   name: z.string().min(1),
   sku: z.string().optional(),
   description: z.string().optional(),
-  imageUrl: z.string().optional(),
+  imageUrl: z.string().nullable().optional(),
   price: z.coerce.number().nonnegative(),
   // Set to enable the Half / Full / Custom portion picker; `price` is the full portion.
   halfPrice: z.number().nonnegative().nullable().optional(),
@@ -57,3 +57,9 @@ export const menuItemSchema = z.object({
   modifierGroupIds: z.array(z.string()).default([]),
 });
 export type MenuItemDto = z.infer<typeof menuItemSchema>;
+
+// A bounded raster data URL persists in PostgreSQL instead of ephemeral server disk.
+export const menuItemPhotoSchema = z.object({
+  imageUrl: z.string().max(82_000).regex(/^data:image\/(?:png|jpeg|webp|gif);base64,[A-Za-z0-9+/]+={0,2}$/).nullable(),
+}).strict();
+export type MenuItemPhotoDto = z.infer<typeof menuItemPhotoSchema>;
