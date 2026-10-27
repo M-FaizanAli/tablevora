@@ -17,6 +17,8 @@ import { ApiTags } from '@nestjs/swagger';
 import {
   menuCategorySchema,
   menuItemSchema,
+  menuItemPhotoSchema,
+  type MenuItemPhotoDto,
   modifierGroupSchema,
   setComboComponentsSchema,
   type SessionUser,
@@ -26,7 +28,8 @@ import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { ZodValidationPipe } from '../../common/pipes/zod-validation.pipe';
 import { BranchAccessService } from '../../common/services/branch-access.service';
 import {
-  assertValidImageSignature,
+  menuImageDataUrl,
+  assertValidInlineMenuPhoto,
   imageUploadOptions,
 } from '../../common/upload/image-upload.config';
 import { MenuService } from './menu.service';
@@ -160,8 +163,20 @@ export class MenuController {
     // filename/mimetype before any bytes were read — verify the bytes
     // actually on disk match a real image signature before this URL is
     // ever handed back to be saved on a menu item and served publicly.
-    assertValidImageSignature(file.path);
-    return { url: `/api/uploads/${file.filename}` };
+    return { url: menuImageDataUrl(file.path) };
+  }
+
+  @Auth('menu.manage')
+  @Patch('items/:id/photo')
+  async updateItemPhoto(
+    @CurrentUser() user: SessionUser,
+    @Query('branchId') branchId: string,
+    @Param('id') id: string,
+    @Body(new ZodValidationPipe(menuItemPhotoSchema)) body: MenuItemPhotoDto,
+  ) {
+    await this.branchAccess.assertAccess(user.restaurantId, branchId);
+    assertValidInlineMenuPhoto(body.imageUrl);
+    return this.menuService.updateItem(branchId, id, user.id, body);
   }
 
   @Auth('menu.manage')

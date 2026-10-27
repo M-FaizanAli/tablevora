@@ -250,7 +250,7 @@ function PosPageInner() {
   const showTablePicker = orderType === "DINE_IN" && !tableId && !activeOrder;
 
   return (
-    <div className="flex h-[calc(100dvh-10rem)] flex-col gap-4 lg:h-[calc(100dvh-8rem)]">
+    <div className="flex h-full min-h-0 flex-col gap-4">
       <StatusNote note={note} onClear={clearNote} />
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div className="min-w-0 flex-1">
@@ -271,7 +271,7 @@ function PosPageInner() {
       <BranchNotice />
 
       {showTablePicker ? (
-        <Card className="flex-1 overflow-hidden p-5">
+        <Card className="min-h-0 flex-1 overflow-hidden p-3 sm:p-4">
           <PosTablePicker
             floors={floors ?? []}
             onSelect={handleTablePick}
@@ -282,7 +282,7 @@ function PosPageInner() {
           />
         </Card>
       ) : (
-        <div className="grid min-h-0 flex-1 grid-cols-1 gap-6 overflow-hidden lg:grid-cols-[1fr_360px]">
+        <div className="grid min-h-0 flex-1 grid-cols-1 gap-4 overflow-hidden lg:grid-cols-[minmax(0,1fr)_320px] xl:grid-cols-[minmax(0,1fr)_360px]">
           <Card className="min-h-0 overflow-hidden p-3 sm:p-5">
             <ProductGrid branchId={branchId} onSelect={handleSelect} />
           </Card>

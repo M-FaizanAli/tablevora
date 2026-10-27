@@ -72,7 +72,7 @@ export function PosTablePicker({
   }
 
   return (
-    <div className="flex h-full flex-col gap-4">
+    <div className="flex h-full min-h-0 flex-col gap-4">
       {floors.length > 1 && (
         <ResponsiveTabs
           label="Floor"
@@ -86,7 +86,7 @@ export function PosTablePicker({
         />
       )}
 
-      <div className="grid flex-1 auto-rows-min grid-cols-3 items-start gap-3 overflow-y-auto pb-2 sm:grid-cols-4 lg:grid-cols-5 lg:gap-4 xl:grid-cols-6 2xl:grid-cols-7">
+      <div className="grid min-h-0 flex-1 auto-rows-min grid-cols-[repeat(auto-fill,minmax(min(100%,8rem),1fr))] items-start gap-3 overflow-y-auto p-1">
         {activeFloor?.tables.map((table) => {
           const clickable = table.status !== "CLEANING" && table.status !== "OUT_OF_SERVICE";
           return (
@@ -97,8 +97,8 @@ export function PosTablePicker({
               title={STATUS_LABEL[table.status]}
               onClick={() => onSelect(table)}
               className={cn(
-                "flex h-28 flex-col items-center justify-center gap-1 rounded-2xl border-2 p-3 text-xs font-medium shadow-sm transition-transform lg:h-36 lg:gap-1.5",
-                clickable && "cursor-pointer hover:scale-[1.03] hover:shadow-md",
+                "flex h-28 flex-col items-center justify-center gap-1 rounded-2xl border-2 p-3 text-xs font-medium shadow-sm transition-[background-color,box-shadow,border-color] lg:h-36 lg:gap-1.5",
+                clickable && "cursor-pointer hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary",
                 !clickable && "cursor-not-allowed",
                 STATUS_STYLES[table.status],
               )}

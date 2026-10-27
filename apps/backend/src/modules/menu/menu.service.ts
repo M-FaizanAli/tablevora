@@ -154,7 +154,7 @@ export class MenuService {
         name: updated.name,
         priceBefore: Number(existing.price),
         priceAfter: Number(updated.price),
-        changes: rest,
+        changes: { ...rest, ...('imageUrl' in rest ? { imageUrl: rest.imageUrl ? '[photo updated]' : null } : {}) },
       },
     });
 

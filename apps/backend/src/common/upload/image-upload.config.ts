@@ -101,3 +101,24 @@ export function assertValidImageSignature(filePath: string): void {
     );
   }
 }
+
+/** Small menu photos live in the item's text field and survive free-host restarts. */
+export function menuImageDataUrl(filePath: string): string {
+  try {
+    assertValidImageSignature(filePath);
+    const bytes = readFileSync(filePath);
+    if (bytes.length > 60 * 1024) throw new BadRequestException('Menu photos must be 60 KB or smaller. Use the photo picker to resize the image.');
+    const mime = bytes[0] === 0xff ? 'image/jpeg' : bytes[0] === 0x89 ? 'image/png' : bytes[0] === 0x47 ? 'image/gif' : 'image/webp';
+    return `data:${mime};base64,${bytes.toString('base64')}`;
+  } finally {
+    if (existsSync(filePath)) unlinkSync(filePath);
+  }
+}
+
+export function assertValidInlineMenuPhoto(value: string | null): void {
+  if (value === null) return;
+  const match = /^data:image\/(?:png|jpeg|webp|gif);base64,([A-Za-z0-9+/]+={0,2})$/.exec(value);
+  if (!match) throw new BadRequestException('Choose a raster image.');
+  const bytes = Buffer.from(match[1], 'base64');
+  if (bytes.length > 60 * 1024 || !SIGNATURES.some((signature) => signature.match(bytes))) throw new BadRequestException('Invalid or oversized menu photo.');
+}

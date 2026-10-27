@@ -137,3 +137,11 @@ export function useDeleteMenuItem(branchId: string | null) {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["menu", "items", branchId] }),
   });
 }
+
+export function useUpdateMenuPhoto(branchId: string | null) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, imageUrl }: { id: string; imageUrl: string | null }) => api.patch(`/menu/items/${id}/photo?branchId=${branchId}`, { imageUrl }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['menu', 'items', branchId] }),
+  });
+}

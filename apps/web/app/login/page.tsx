@@ -52,19 +52,19 @@ export default function LoginPage() {
 
   return (
     <main className="relative grid flex-1 overflow-hidden bg-background lg:grid-cols-2">
-      <aside className="hidden flex-col justify-between bg-[#123E32] p-14 text-[#F7F5EF] lg:flex">
+      <aside className="hidden flex-col justify-between bg-[#123E32] p-8 text-[#F7F5EF] xl:p-12 lg:flex">
         <Link href="/" className="flex items-center gap-3 text-xl font-semibold"><Logo size={42} />Tablevora.</Link>
-        <div className="py-20"><p className="mb-6 text-xs uppercase tracking-[.2em] text-[#A9E8C8]">Welcome to a better service</p><h2 className="text-6xl font-medium leading-[1.08] tracking-tight">Everything in place.<br /><span className="text-[#A9E8C8]">Everyone in sync.</span></h2><p className="mt-7 max-w-sm text-base leading-8 text-[#D7EBDD]">Your tables, kitchen, and team. One workspace to keep the day moving.</p></div>
+        <div className="py-10"><p className="mb-6 text-xs uppercase tracking-[.2em] text-[#A9E8C8]">Welcome to a better service</p><h2 className="text-[clamp(2.5rem,4.2vw,4rem)] font-medium leading-[1.12] tracking-tight">Everything in place.<br /><span className="text-[#A9E8C8]">Everyone in sync.</span></h2><p className="mt-7 max-w-sm text-base leading-8 text-[#D7EBDD]">Your tables, kitchen, and team. One workspace to keep the day moving.</p></div>
         <Link href="/about" className="text-xs text-[#D7EBDD]">Open-source foundation. Your restaurant at the centre.</Link>
       </aside>
-      <div className="flex items-center justify-center px-6 py-14">
+      <div className="flex items-center justify-center px-6 py-8 sm:py-12">
       <motion.div
         initial={prefersReducedMotion ? false : { opacity: 0, y: 14 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
         className="w-full max-w-sm"
       >
-        <div className="mb-10 flex flex-col items-center gap-2 text-center">
+        <div className="mb-7 flex flex-col items-center gap-2 text-center">
           <Link href="/">
             <Logo size={44} />
           </Link>

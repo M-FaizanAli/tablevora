@@ -1,7 +1,7 @@
 "use client";
 
 import { ImagePlus, X } from "lucide-react";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import {
@@ -24,6 +24,7 @@ import { Switch } from "@/components/ui/switch";
 import {
   useStations,
   useUpdateMenuItem,
+  useUpdateMenuPhoto,
   useUploadItemImage,
   type MenuCategory,
   type MenuItem,
@@ -32,6 +33,7 @@ import { hasPermission, useCurrentUser } from "@/hooks/use-auth";
 import { StockTrackingSection } from "@/components/menu/stock-tracking-section";
 import { useSettings } from "@/hooks/use-settings";
 import { ApiError } from "@/lib/api";
+import { prepareMenuImage } from "@/lib/prepare-menu-image";
 
 // Mounted only while a specific item is being edited (see MenuPage), keyed
 // by item.id — same pattern as EditRoleDialog/EditCategoryDialog.
@@ -53,33 +55,48 @@ export function EditItemDialog({
   const [halfPrice, setHalfPrice] = useState(item.halfPrice ?? "");
   const [taxRatePercent, setTaxRatePercent] = useState(item.taxRatePercent);
   const [isVeg, setIsVeg] = useState(item.isVeg);
-  const [imageUrl, setImageUrl] = useState<string | undefined>(item.imageUrl ?? undefined);
+  const [imageUrl, setImageUrl] = useState<string | null>(item.imageUrl ?? null);
   const [imagePreview, setImagePreview] = useState<string | undefined>(item.imageUrl ?? undefined);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [preparingPhoto, setPreparingPhoto] = useState(false);
+  useEffect(() => () => { if (imagePreview?.startsWith('blob:')) URL.revokeObjectURL(imagePreview); }, [imagePreview]);
 
   const { data: stations } = useStations(branchId);
   const { data: settings } = useSettings(branchId);
   const { data: me } = useCurrentUser();
   const updateItem = useUpdateMenuItem(branchId);
+  const updatePhoto = useUpdateMenuPhoto(branchId);
+  const photoOnly = process.env.NEXT_PUBLIC_DEMO_MODE === "true";
   const uploadImage = useUploadItemImage();
   const priceLabel =
     settings?.branch.taxMode === "EXCLUSIVE" ? "Price (excl. tax)" : "Price (incl. tax)";
 
-  const onFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const onFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
+    e.target.value = '';
     if (!file) return;
-    setImagePreview(URL.createObjectURL(file));
-    uploadImage.mutate(file, {
-      onSuccess: (res) => setImageUrl(res.url),
-      onError: (err) => {
-        toast.error(err instanceof ApiError ? err.message : "Could not upload image");
-        setImagePreview(item.imageUrl ?? undefined);
-      },
-    });
+    setPreparingPhoto(true);
+    try {
+      const prepared = await prepareMenuImage(file);
+      setImagePreview(URL.createObjectURL(prepared));
+      const result = await uploadImage.mutateAsync(prepared);
+      setImageUrl(result.url);
+      setImagePreview(result.url);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Could not upload image');
+      setImagePreview(imageUrl ?? undefined);
+    } finally { setPreparingPhoto(false); }
   };
 
   const onSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    if (photoOnly) {
+      updatePhoto.mutate({ id: item.id, imageUrl }, {
+        onSuccess: () => { toast.success('Menu photo updated'); onClose(); },
+        onError: (err) => toast.error(err instanceof ApiError ? err.message : 'Could not save photo'),
+      });
+      return;
+    }
     if (!categoryId) {
       toast.error("Choose a category");
       return;
@@ -113,7 +130,8 @@ export function EditItemDialog({
       <DialogContent className="sm:max-w-md">
         <form onSubmit={onSubmit} className="flex flex-col gap-4">
           <DialogHeader>
-            <DialogTitle>Edit menu item</DialogTitle>
+            <DialogTitle>{photoOnly ? "Update menu photo" : "Edit menu item"}</DialogTitle>
+            {photoOnly && <p className="text-xs text-muted-foreground">Try adding, replacing, or removing a photo. Other menu settings are read-only in the shared demo.</p>}
           </DialogHeader>
 
           <div className="flex flex-col gap-2">
@@ -131,8 +149,9 @@ export function EditItemDialog({
                 <img src={imagePreview} alt="" className="h-full w-full object-cover" />
                 <button
                   type="button"
+                  disabled={preparingPhoto}
                   onClick={() => {
-                    setImageUrl(undefined);
+                    setImageUrl(null);
                     setImagePreview(undefined);
                     if (fileInputRef.current) fileInputRef.current.value = "";
                   }}
@@ -141,9 +160,9 @@ export function EditItemDialog({
                 >
                   <X className="h-3.5 w-3.5" />
                 </button>
-                {uploadImage.isPending && (
+                {(uploadImage.isPending || preparingPhoto) && (
                   <div className="absolute inset-0 flex items-center justify-center bg-background/60 text-xs">
-                    Uploading…
+                    Preparing photo…
                   </div>
                 )}
               </div>
@@ -157,8 +176,11 @@ export function EditItemDialog({
                 <span className="text-xs">Add photo</span>
               </button>
             )}
+            {imagePreview && <Button type="button" variant="outline" size="sm" className="mt-2 self-start" disabled={preparingPhoto} onClick={() => fileInputRef.current?.click()}>Change photo</Button>}
+            <p className="text-xs text-muted-foreground">Photos are resized automatically and saved with your menu.</p>
           </div>
 
+          <fieldset disabled={photoOnly} className="contents">
           <div className="flex flex-col gap-2">
             <Label htmlFor="item-edit-name">Name</Label>
             <Input
@@ -251,16 +273,17 @@ export function EditItemDialog({
             <Label htmlFor="edit-is-veg" className="cursor-pointer">
               Vegetarian
             </Label>
-            <Switch id="edit-is-veg" checked={isVeg} onCheckedChange={setIsVeg} />
+            <Switch id="edit-is-veg" checked={isVeg} onCheckedChange={setIsVeg} disabled={photoOnly} />
           </div>
 
+          </fieldset>
           <DialogFooter>
-            <Button type="submit" disabled={updateItem.isPending || uploadImage.isPending}>
-              {updateItem.isPending ? "Saving…" : "Save changes"}
+            <Button type="submit" disabled={updateItem.isPending || updatePhoto.isPending || uploadImage.isPending || preparingPhoto}>
+              {updateItem.isPending || updatePhoto.isPending ? "Saving…" : photoOnly ? "Save photo" : "Save changes"}
             </Button>
           </DialogFooter>
         </form>
-        {hasPermission(me?.user, "inventory.manage") && (
+        {!photoOnly && hasPermission(me?.user, "inventory.manage") && (
           <StockTrackingSection branchId={branchId} itemId={item.id} isCombo={item.isCombo} />
         )}
       </DialogContent>

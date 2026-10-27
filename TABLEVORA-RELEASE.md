@@ -1,5 +1,13 @@
 # Tablevora launch work — 26 October 2026
 
+## Visual and menu-photo follow-up — 27 October 2026
+
+- Replaced the padded raster nav mark with a vector master and regenerated app icons/favicon from the same geometry.
+- Fixed dashboard shell sizing/scrolling, POS category/product widths, table picker overflow and hover clipping, menu item name/price overflow, photo display/fallbacks, and laptop menu-table crowding. Tightened login spacing and chart currency-label space, and wrapped the kitchen progress strip at narrow widths.
+- Added six bundled sample dish images to the demo. Real menu photo add/replace/remove now goes through a size-limited raster pipeline and persists in PostgreSQL; demo users cannot change other menu fields. Disabled the custom vegetarian switch alongside the other read-only demo fields.
+- Desktop and 390 px phone browser review showed the POS photo grid/cart, responsive navigation, and 1024 px menu table fit without horizontal clipping. Menu photo editor is visible and read-only fields are disabled. Browser file-picker automation did not open the system picker, so a real file selection was not verified through the browser.
+- Frontend logic: 59 tests passed. Backend focused image/demo-guard tests: 23 passed. Types and frontend production build passed before the final breakpoint/disabled-switch adjustments; final build and full backend suite are running.
+
 ## Implemented
 
 - Tablevora identity: generated logo, app icons, green/cream/mint light and dark palettes, Outfit/Geist typography, new public landing and sign-in layout.
