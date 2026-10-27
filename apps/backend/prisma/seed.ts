@@ -25,6 +25,11 @@ function priceLine(
   const taxAmount = rate > 0 ? round2(lineTotal - lineTotal / (1 + rate)) : 0;
   return { lineTotal, taxAmount };
 }
+// The demo branch uses US sales tax (EXCLUSIVE): menu prices are pre-tax and
+// get grossed up first, exactly like toEffectiveInclusiveUnitPrice in pricing.ts.
+function inclusiveUnitPrice(price: number, taxRatePercent: number) {
+  return round2(price * (1 + taxRatePercent / 100));
+}
 
 const prisma = new PrismaClient();
 
@@ -42,24 +47,40 @@ async function main() {
   const permissionByKey = new Map(allPermissions.map((p) => [p.key, p]));
 
   console.log('Creating demo restaurant + branch...');
+  // The public demo presents an international (US) restaurant. Currency, tax
+  // and loyalty are also written on update so re-seeding an existing demo
+  // database converts it in place.
+  const demoLocale = {
+    currency: 'USD',
+    timezone: 'America/New_York',
+    loyaltyEarnPerCurrency: 1, // 1 point per $1 spent
+    loyaltyPointValue: 0.01, // 100 points = $1
+  };
   const restaurant = await prisma.restaurant.upsert({
     where: { id: 'demo-restaurant' },
-    update: {},
+    update: demoLocale,
     create: {
       id: 'demo-restaurant',
       name: 'The Greenhouse · Tablevora Demo',
-      currency: 'INR',
+      ...demoLocale,
     },
   });
 
+  const demoTax = {
+    country: 'US',
+    taxRegime: 'US_SALES_TAX',
+    taxMode: 'EXCLUSIVE',
+    taxLabel: 'Sales Tax',
+  } as const;
   const branch = await prisma.branch.upsert({
     where: { id: 'demo-branch' },
-    update: {},
+    update: demoTax,
     create: {
       id: 'demo-branch',
       restaurantId: restaurant.id,
       name: 'Main Branch',
-      address: '123 Demo Street',
+      address: '123 Demo Street, New York, NY',
+      ...demoTax,
     },
   });
 
@@ -226,12 +247,17 @@ async function main() {
             create: {
               id: 'demo-mod-cheese',
               name: 'Extra Cheese',
-              priceAdjustment: 60,
+              priceAdjustment: 1.5,
             },
           },
         ],
       },
     },
+  });
+  // connectOrCreate leaves an existing modifier alone; keep its price in USD.
+  await prisma.modifier.update({
+    where: { id: 'demo-mod-cheese' },
+    data: { priceAdjustment: 1.5 },
   });
 
   const demoItems: {
@@ -245,21 +271,21 @@ async function main() {
     modifierGroupId?: string;
   }[] = [
     {
-      id: 'demo-item-paneer-tikka',
-      name: 'Paneer Tikka',
+      id: 'demo-item-caesar-salad',
+      name: 'Caesar Salad',
       categoryId: starters.id,
       stationId: mainKitchen.id,
-      price: 280,
-      taxRatePercent: 5,
-      isVeg: true,
+      price: 11,
+      taxRatePercent: 8,
+      isVeg: false,
     },
     {
-      id: 'demo-item-chicken-65',
-      name: 'Chicken 65',
+      id: 'demo-item-fish-tacos',
+      name: 'Fish Tacos',
       categoryId: starters.id,
       stationId: mainKitchen.id,
-      price: 320,
-      taxRatePercent: 5,
+      price: 13,
+      taxRatePercent: 8,
       isVeg: false,
     },
     {
@@ -267,44 +293,68 @@ async function main() {
       name: 'Margherita Pizza',
       categoryId: mains.id,
       stationId: mainKitchen.id,
-      price: 420,
-      taxRatePercent: 5,
+      price: 14,
+      taxRatePercent: 8,
       isVeg: true,
       modifierGroupId: crustGroup.id,
     },
     {
-      id: 'demo-item-butter-chicken',
-      name: 'Butter Chicken',
+      id: 'demo-item-cheeseburger',
+      name: 'Classic Cheeseburger',
       categoryId: mains.id,
       stationId: mainKitchen.id,
-      price: 480,
-      taxRatePercent: 5,
+      price: 15,
+      taxRatePercent: 8,
       isVeg: false,
     },
     {
-      id: 'demo-item-mojito',
-      name: 'Virgin Mojito',
+      id: 'demo-item-iced-latte',
+      name: 'Iced Latte',
       categoryId: drinks.id,
       stationId: bar.id,
-      price: 220,
-      taxRatePercent: 18,
+      price: 5,
+      taxRatePercent: 8,
       isVeg: true,
     },
     {
-      id: 'demo-item-cola',
-      name: 'Coca-Cola',
+      id: 'demo-item-lemonade',
+      name: 'Fresh Lemonade',
       categoryId: drinks.id,
       stationId: bar.id,
-      price: 90,
-      taxRatePercent: 18,
+      price: 4.5,
+      taxRatePercent: 8,
       isVeg: true,
     },
   ];
 
+  // Earlier demo databases were seeded with an Indian menu in INR; hide those
+  // items (orders that reference them keep working) instead of deleting them.
+  await prisma.menuItem.updateMany({
+    where: {
+      id: {
+        in: [
+          'demo-item-paneer-tikka',
+          'demo-item-chicken-65',
+          'demo-item-butter-chicken',
+          'demo-item-mojito',
+          'demo-item-cola',
+        ],
+      },
+    },
+    data: { isActive: false },
+  });
+
   for (const item of demoItems) {
     await prisma.menuItem.upsert({
       where: { id: item.id },
-      update: {},
+      // refresh price/tax so a re-seed corrects items kept from the INR menu (Margherita)
+      update: {
+        name: item.name,
+        price: item.price,
+        taxRatePercent: item.taxRatePercent,
+        isVeg: item.isVeg,
+        isActive: true,
+      },
       create: {
         id: item.id,
         branchId: branch.id,
@@ -337,23 +387,23 @@ async function main() {
     {
       // Phoned in, sent to the kitchen, still waiting for pickup — shows up
       // live on the Kitchen Display with no table attached.
-      id: 'demo-order-takeaway-1',
-      orderNumber: 'TA-DEMO-0001',
+      id: 'demo-order-us-takeaway-1',
+      orderNumber: 'TA-DEMO-0101',
       paid: false,
       lines: [
-        { itemId: 'demo-item-chicken-65', quantity: 1 },
-        { itemId: 'demo-item-cola', quantity: 2 },
+        { itemId: 'demo-item-fish-tacos', quantity: 1 },
+        { itemId: 'demo-item-lemonade', quantity: 2 },
       ],
     },
     {
       // Already picked up and paid — shows takeaway flowing all the way
       // through checkout, not just the kitchen side.
-      id: 'demo-order-takeaway-2',
-      orderNumber: 'TA-DEMO-0002',
+      id: 'demo-order-us-takeaway-2',
+      orderNumber: 'TA-DEMO-0102',
       paid: true,
       lines: [
-        { itemId: 'demo-item-butter-chicken', quantity: 1 },
-        { itemId: 'demo-item-cola', quantity: 1 },
+        { itemId: 'demo-item-cheeseburger', quantity: 1 },
+        { itemId: 'demo-item-iced-latte', quantity: 1 },
       ],
     },
   ];
@@ -361,8 +411,9 @@ async function main() {
   for (const demoOrder of demoOrders) {
     const lines = demoOrder.lines.map((line) => {
       const item = itemById.get(line.itemId)!;
-      const priced = priceLine(line.quantity, item.price, item.taxRatePercent);
-      return { item, quantity: line.quantity, priced };
+      const unitPrice = inclusiveUnitPrice(item.price, item.taxRatePercent);
+      const priced = priceLine(line.quantity, unitPrice, item.taxRatePercent);
+      return { item, unitPrice, quantity: line.quantity, priced };
     });
     const subtotal = round2(
       lines.reduce((sum, l) => sum + l.priced.lineTotal, 0),
@@ -402,7 +453,7 @@ async function main() {
           orderId: order.id,
           menuItemId: line.item.id,
           nameSnapshot: line.item.name,
-          unitPriceSnapshot: line.item.price,
+          unitPriceSnapshot: line.unitPrice,
           taxRateSnapshot: line.item.taxRatePercent,
           quantity: line.quantity,
           lineTotal: line.priced.lineTotal,
