@@ -63,7 +63,7 @@ model Restaurant {
   // OrdersService, now per-restaurant and settings-editable. Point value
   // is the currency amount 1 redeemed point is worth; earn rate is how
   // many currency units of net spend earn 1 point (floor division).
-  loyaltyPointValue      Decimal @default(1) @db.Decimal(6, 2)
+  loyaltyPointValue      Decimal @default(1) @db.Decimal(8, 4)
   loyaltyEarnPerCurrency Int     @default(100)
 
   createdAt DateTime @default(now())
@@ -774,7 +774,7 @@ model PurchaseOrder {
   status       PurchaseOrderStatus @default(DRAFT)
   expectedDate DateTime?
   notes        String?
-  totalAmount  Decimal             @default(0) @db.Decimal(12, 2)
+  totalAmount  Decimal             @default(0) @db.Decimal(14, 4)
 
   createdById String
   createdBy   User     @relation("PurchaseOrderCreatedBy", fields: [createdById], references: [id])
@@ -974,8 +974,8 @@ model SupplierInvoice {
   invoiceNumber String
   invoiceDate   DateTime
   dueDate       DateTime?
-  totalAmount   Decimal               @db.Decimal(12, 2)
-  amountPaid    Decimal               @default(0) @db.Decimal(12, 2)
+  totalAmount   Decimal               @db.Decimal(14, 4)
+  amountPaid    Decimal               @default(0) @db.Decimal(14, 4)
   status        SupplierInvoiceStatus @default(UNPAID)
   notes         String?
 
@@ -998,7 +998,7 @@ model SupplierPayment {
   supplierInvoiceId String
   supplierInvoice   SupplierInvoice @relation(fields: [supplierInvoiceId], references: [id], onDelete: Cascade)
 
-  amount        Decimal       @db.Decimal(12, 2)
+  amount        Decimal       @db.Decimal(14, 4)
   paymentMethod PaymentMethod
   reference     String?
   paidAt        DateTime      @default(now())
@@ -1124,9 +1124,9 @@ model MenuItem {
   description String?
   imageUrl    String?
 
-  price          Decimal  @db.Decimal(12, 2) // tax-inclusive selling price (see nodedr-pos GST lesson in ARCHITECTURE.md)
+  price          Decimal  @db.Decimal(14, 4) // tax-inclusive selling price (see nodedr-pos GST lesson in ARCHITECTURE.md)
   taxRatePercent Decimal  @default(0) @db.Decimal(6, 3)
-  costPrice      Decimal? @db.Decimal(12, 2)
+  costPrice      Decimal? @db.Decimal(14, 4)
 
   prepTimeMinutes Int?
   calories        Int?
@@ -1154,7 +1154,7 @@ model MenuItem {
   stockQuantityPerSale Decimal           @default(1) @db.Decimal(12, 3)
 
   // Price of a half portion; null = item has no portion picker. `price` is the full portion.
-  halfPrice Decimal? @db.Decimal(12, 2)
+  halfPrice Decimal? @db.Decimal(14, 4)
 
   sortOrder Int      @default(0)
   createdAt DateTime @default(now())
@@ -1193,7 +1193,7 @@ model Modifier {
   group   ModifierGroup @relation(fields: [groupId], references: [id], onDelete: Cascade)
 
   name            String // e.g. "Extra Cheese", "No Onion"
-  priceAdjustment Decimal  @default(0) @db.Decimal(12, 2)
+  priceAdjustment Decimal  @default(0) @db.Decimal(14, 4)
   taxRatePercent  Decimal? @db.Decimal(6, 3)
   kitchenNote     String?
   isDefault       Boolean  @default(false)
@@ -1237,7 +1237,7 @@ model Customer {
   loyaltyPoints   Int     @default(0)
   // Opted out of marketing messages; excluded from every campaign audience.
   marketingOptOut Boolean @default(false)
-  walletBalance   Decimal @default(0) @db.Decimal(12, 2) // store credit
+  walletBalance   Decimal @default(0) @db.Decimal(14, 4) // store credit
 
   createdAt DateTime   @default(now())
   orders    Order[]
@@ -1256,8 +1256,8 @@ model GiftCard {
   branchId     String
   branch       Branch    @relation(fields: [branchId], references: [id], onDelete: Cascade)
   code         String    @unique
-  initialValue Decimal   @db.Decimal(12, 2)
-  balance      Decimal   @db.Decimal(12, 2)
+  initialValue Decimal   @db.Decimal(14, 4)
+  balance      Decimal   @db.Decimal(14, 4)
   customerId   String?
   customer     Customer? @relation(fields: [customerId], references: [id], onDelete: SetNull)
   isActive     Boolean   @default(true)
@@ -1275,7 +1275,7 @@ model GiftCardRedemption {
   giftCard   GiftCard @relation(fields: [giftCardId], references: [id], onDelete: Cascade)
   orderId    String
   order      Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
-  amount     Decimal  @db.Decimal(12, 2)
+  amount     Decimal  @db.Decimal(14, 4)
   createdAt  DateTime @default(now())
 
   @@map("gift_card_redemptions")
@@ -1382,13 +1382,13 @@ model Order {
   createdById String
   createdBy   User   @relation("OrderCreatedBy", fields: [createdById], references: [id])
 
-  subtotal              Decimal @default(0) @db.Decimal(12, 2)
-  discountAmount        Decimal @default(0) @db.Decimal(12, 2)
-  taxAmount             Decimal @default(0) @db.Decimal(12, 2) // informational breakup only — see ARCHITECTURE.md inclusive-pricing note
-  tipAmount             Decimal @default(0) @db.Decimal(12, 2)
+  subtotal              Decimal @default(0) @db.Decimal(14, 4)
+  discountAmount        Decimal @default(0) @db.Decimal(14, 4)
+  taxAmount             Decimal @default(0) @db.Decimal(14, 4) // informational breakup only — see ARCHITECTURE.md inclusive-pricing note
+  tipAmount             Decimal @default(0) @db.Decimal(14, 4)
   loyaltyPointsRedeemed Int     @default(0)
-  loyaltyDiscountAmount Decimal @default(0) @db.Decimal(12, 2)
-  totalAmount           Decimal @default(0) @db.Decimal(12, 2)
+  loyaltyDiscountAmount Decimal @default(0) @db.Decimal(14, 4)
+  totalAmount           Decimal @default(0) @db.Decimal(14, 4)
 
   notes         String?
   cancelReason  String?
@@ -1403,7 +1403,7 @@ model Order {
   // The manual discount as the cashier entered it, kept next to the computed
   // discountAmount so a bill can show both the percentage and the amount.
   discountType  ManualDiscountType?
-  discountValue Decimal?            @db.Decimal(12, 2)
+  discountValue Decimal?            @db.Decimal(14, 4)
 
   // Client-generated idempotency key for public/unauthenticated order
   // submits (kiosk). A retry after a dropped connection carries the same
@@ -1415,7 +1415,7 @@ model Order {
   // rewrite history.
   deliveryZoneId  String?
   deliveryZone    DeliveryZone?   @relation(fields: [deliveryZoneId], references: [id], onDelete: SetNull)
-  deliveryFee     Decimal         @default(0) @db.Decimal(12, 2)
+  deliveryFee     Decimal         @default(0) @db.Decimal(14, 4)
   deliveryAddress String?
   deliveryPincode String?
   deliveryPhone   String?
@@ -1458,11 +1458,11 @@ model OrderItem {
   // Snapshotted at order time so later menu edits never rewrite history
   // (same discipline as nodedr-pos snapshotting name/taxRate/unit onto InvoiceItem).
   nameSnapshot      String
-  unitPriceSnapshot Decimal @db.Decimal(12, 2)
+  unitPriceSnapshot Decimal @db.Decimal(14, 4)
   taxRateSnapshot   Decimal @db.Decimal(6, 3)
 
   quantity    Int           @default(1)
-  lineTotal   Decimal       @db.Decimal(12, 2)
+  lineTotal   Decimal       @db.Decimal(14, 4)
   kitchenNote String?
   status      KotItemStatus @default(NEW)
 
@@ -1482,7 +1482,7 @@ model OrderItemModifier {
   modifier    Modifier  @relation(fields: [modifierId], references: [id])
 
   nameSnapshot     String
-  priceAdjSnapshot Decimal @db.Decimal(12, 2)
+  priceAdjSnapshot Decimal @db.Decimal(14, 4)
 
   @@index([orderItemId])
   @@map("order_item_modifiers")
@@ -1600,7 +1600,7 @@ model Reservation {
   table   Table?  @relation(fields: [tableId], references: [id], onDelete: SetNull)
 
   specialRequests String?
-  deposit         Decimal?          @db.Decimal(12, 2)
+  deposit         Decimal?          @db.Decimal(14, 4)
   status          ReservationStatus @default(RESERVED)
   channel         OrderChannel      @default(STAFF)
   reminderSentAt  DateTime?
@@ -1646,12 +1646,12 @@ model Payment {
   order   Order  @relation(fields: [orderId], references: [id], onDelete: Cascade)
 
   method          PaymentMethod
-  amount          Decimal       @db.Decimal(12, 2) // applied to the bill (net of change)
+  amount          Decimal       @db.Decimal(14, 4) // applied to the bill (net of change)
   reference       String? // gateway/UPI txn ref
   // Cash actually handed over and the change given back, when the guest paid
   // more than was applied. Null on older payments and exact payments.
-  tendered        Decimal?      @db.Decimal(12, 2)
-  changeGiven     Decimal?      @db.Decimal(12, 2)
+  tendered        Decimal?      @db.Decimal(14, 4)
+  changeGiven     Decimal?      @db.Decimal(14, 4)
   createdById     String?
   // Client-generated key for one checkout attempt, so a retried or
   // double-tapped request records its payments once.
@@ -1668,7 +1668,7 @@ model Refund {
   orderId String
   order   Order  @relation(fields: [orderId], references: [id], onDelete: Cascade)
 
-  amount      Decimal       @db.Decimal(12, 2)
+  amount      Decimal       @db.Decimal(14, 4)
   reason      String?
   method      PaymentMethod // how the refund was issued back to the guest
   createdById String
@@ -1742,8 +1742,8 @@ model DeliveryZone {
   branch   Branch @relation(fields: [branchId], references: [id], onDelete: Cascade)
 
   name           String
-  fee            Decimal  @default(0) @db.Decimal(12, 2)
-  minOrderAmount Decimal  @default(0) @db.Decimal(12, 2)
+  fee            Decimal  @default(0) @db.Decimal(14, 4)
+  minOrderAmount Decimal  @default(0) @db.Decimal(14, 4)
   etaMinutes     Int      @default(45)
   pincodes       String[]
   isActive       Boolean  @default(true)
@@ -1843,7 +1843,7 @@ model StaffPay {
   userId  String  @id
   user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
   payType PayType @default(MONTHLY)
-  rate    Decimal @default(0) @db.Decimal(12, 2)
+  rate    Decimal @default(0) @db.Decimal(14, 4)
 
   @@map("staff_pay")
 }
@@ -1861,8 +1861,8 @@ model PayrollRun {
   periodStart DateTime      @db.Date
   periodEnd   DateTime      @db.Date
   status      PayrollStatus @default(DRAFT)
-  tipPool     Decimal       @default(0) @db.Decimal(12, 2)
-  totalNet    Decimal       @default(0) @db.Decimal(12, 2)
+  tipPool     Decimal       @default(0) @db.Decimal(14, 4)
+  totalNet    Decimal       @default(0) @db.Decimal(14, 4)
   createdAt   DateTime      @default(now())
   finalizedAt DateTime?
 
@@ -1880,10 +1880,10 @@ model PayrollLine {
   user   User       @relation(fields: [userId], references: [id], onDelete: Restrict)
 
   hoursWorked          Decimal @db.Decimal(8, 2)
-  basePay              Decimal @db.Decimal(12, 2)
-  tipShare             Decimal @default(0) @db.Decimal(12, 2)
-  unpaidLeaveDeduction Decimal @default(0) @db.Decimal(12, 2)
-  netPay               Decimal @db.Decimal(12, 2)
+  basePay              Decimal @db.Decimal(14, 4)
+  tipShare             Decimal @default(0) @db.Decimal(14, 4)
+  unpaidLeaveDeduction Decimal @default(0) @db.Decimal(14, 4)
+  netPay               Decimal @db.Decimal(14, 4)
 
   @@unique([runId, userId])
   @@map("payroll_lines")
@@ -1900,7 +1900,7 @@ model Expense {
 
   spentOn      DateTime @db.Date
   category     String
-  amount       Decimal  @db.Decimal(12, 2)
+  amount       Decimal  @db.Decimal(14, 4)
   note         String?
   // Paid out of the till: counted against expected cash at day close.
   paidFromCash Boolean  @default(false)
@@ -1921,12 +1921,12 @@ model CashClosing {
   branch   Branch @relation(fields: [branchId], references: [id], onDelete: Cascade)
 
   businessDate DateTime @db.Date
-  openingFloat Decimal  @default(0) @db.Decimal(12, 2)
-  cashSales    Decimal  @db.Decimal(12, 2)
-  cashExpenses Decimal  @default(0) @db.Decimal(12, 2)
-  expectedCash Decimal  @db.Decimal(12, 2)
-  countedCash  Decimal  @db.Decimal(12, 2)
-  variance     Decimal  @db.Decimal(12, 2)
+  openingFloat Decimal  @default(0) @db.Decimal(14, 4)
+  cashSales    Decimal  @db.Decimal(14, 4)
+  cashExpenses Decimal  @default(0) @db.Decimal(14, 4)
+  expectedCash Decimal  @db.Decimal(14, 4)
+  countedCash  Decimal  @db.Decimal(14, 4)
+  variance     Decimal  @db.Decimal(14, 4)
   note         String?
 
   closedById String
@@ -1952,9 +1952,9 @@ model Coupon {
 
   code           String // stored upper-case; unique per branch
   kind           DiscountKind
-  value          Decimal      @db.Decimal(12, 2)
-  minOrderAmount Decimal      @default(0) @db.Decimal(12, 2)
-  maxDiscount    Decimal?     @db.Decimal(12, 2) // cap for PERCENT coupons
+  value          Decimal      @db.Decimal(14, 4)
+  minOrderAmount Decimal      @default(0) @db.Decimal(14, 4)
+  maxDiscount    Decimal?     @db.Decimal(14, 4) // cap for PERCENT coupons
   validFrom      DateTime?
   validUntil     DateTime?
   usageLimit     Int?
@@ -1975,7 +1975,7 @@ model Promotion {
 
   name        String
   kind        DiscountKind
-  value       Decimal      @db.Decimal(12, 2)
+  value       Decimal      @db.Decimal(14, 4)
   daysOfWeek  Int[] // 0 = Sunday
   startMinute Int
   endMinute   Int
@@ -2048,7 +2048,7 @@ model ServiceLog {
   equipment   Equipment @relation(fields: [equipmentId], references: [id], onDelete: Cascade)
 
   servicedAt DateTime @db.Date
-  cost       Decimal? @db.Decimal(12, 2)
+  cost       Decimal? @db.Decimal(14, 4)
   note       String?
   createdAt  DateTime @default(now())
 
@@ -2145,7 +2145,7 @@ model Budget {
 
   month    String // "YYYY-MM"
   category String
-  amount   Decimal @db.Decimal(12, 2)
+  amount   Decimal @db.Decimal(14, 4)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -2170,7 +2170,7 @@ model BankTransaction {
   postedOn    DateTime     @db.Date
   description String
   reference   String       @default("") // "" not null, so the unique key dedupes re-imports
-  amount      Decimal      @db.Decimal(12, 2)
+  amount      Decimal      @db.Decimal(14, 4)
   status      BankTxStatus @default(UNMATCHED)
   expenseId   String?
   createdAt   DateTime     @default(now())

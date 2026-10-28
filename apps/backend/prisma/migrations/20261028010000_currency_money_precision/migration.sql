@@ -1,0 +1,103 @@
+-- AlterTable
+ALTER TABLE "restaurants" ALTER COLUMN "loyaltyPointValue" SET DATA TYPE DECIMAL(8,4);
+
+-- AlterTable
+ALTER TABLE "purchase_orders" ALTER COLUMN "totalAmount" SET DATA TYPE DECIMAL(14,4);
+
+-- AlterTable
+ALTER TABLE "supplier_invoices" ALTER COLUMN "totalAmount" SET DATA TYPE DECIMAL(14,4),
+ALTER COLUMN "amountPaid" SET DATA TYPE DECIMAL(14,4);
+
+-- AlterTable
+ALTER TABLE "supplier_payments" ALTER COLUMN "amount" SET DATA TYPE DECIMAL(14,4);
+
+-- AlterTable
+ALTER TABLE "menu_items" ALTER COLUMN "price" SET DATA TYPE DECIMAL(14,4),
+ALTER COLUMN "costPrice" SET DATA TYPE DECIMAL(14,4),
+ALTER COLUMN "halfPrice" SET DATA TYPE DECIMAL(14,4);
+
+-- AlterTable
+ALTER TABLE "modifiers" ALTER COLUMN "priceAdjustment" SET DATA TYPE DECIMAL(14,4);
+
+-- AlterTable
+ALTER TABLE "customers" ALTER COLUMN "walletBalance" SET DATA TYPE DECIMAL(14,4);
+
+-- AlterTable
+ALTER TABLE "gift_cards" ALTER COLUMN "initialValue" SET DATA TYPE DECIMAL(14,4),
+ALTER COLUMN "balance" SET DATA TYPE DECIMAL(14,4);
+
+-- AlterTable
+ALTER TABLE "gift_card_redemptions" ALTER COLUMN "amount" SET DATA TYPE DECIMAL(14,4);
+
+-- AlterTable
+ALTER TABLE "orders" ALTER COLUMN "subtotal" SET DATA TYPE DECIMAL(14,4),
+ALTER COLUMN "discountAmount" SET DATA TYPE DECIMAL(14,4),
+ALTER COLUMN "taxAmount" SET DATA TYPE DECIMAL(14,4),
+ALTER COLUMN "tipAmount" SET DATA TYPE DECIMAL(14,4),
+ALTER COLUMN "loyaltyDiscountAmount" SET DATA TYPE DECIMAL(14,4),
+ALTER COLUMN "totalAmount" SET DATA TYPE DECIMAL(14,4),
+ALTER COLUMN "discountValue" SET DATA TYPE DECIMAL(14,4),
+ALTER COLUMN "deliveryFee" SET DATA TYPE DECIMAL(14,4);
+
+-- AlterTable
+ALTER TABLE "order_items" ALTER COLUMN "unitPriceSnapshot" SET DATA TYPE DECIMAL(14,4),
+ALTER COLUMN "lineTotal" SET DATA TYPE DECIMAL(14,4);
+
+-- AlterTable
+ALTER TABLE "order_item_modifiers" ALTER COLUMN "priceAdjSnapshot" SET DATA TYPE DECIMAL(14,4);
+
+-- AlterTable
+ALTER TABLE "reservations" ALTER COLUMN "deposit" SET DATA TYPE DECIMAL(14,4);
+
+-- AlterTable
+ALTER TABLE "payments" ALTER COLUMN "amount" SET DATA TYPE DECIMAL(14,4),
+ALTER COLUMN "tendered" SET DATA TYPE DECIMAL(14,4),
+ALTER COLUMN "changeGiven" SET DATA TYPE DECIMAL(14,4);
+
+-- AlterTable
+ALTER TABLE "refunds" ALTER COLUMN "amount" SET DATA TYPE DECIMAL(14,4);
+
+-- AlterTable
+ALTER TABLE "delivery_zones" ALTER COLUMN "fee" SET DATA TYPE DECIMAL(14,4),
+ALTER COLUMN "minOrderAmount" SET DATA TYPE DECIMAL(14,4);
+
+-- AlterTable
+ALTER TABLE "staff_pay" ALTER COLUMN "rate" SET DATA TYPE DECIMAL(14,4);
+
+-- AlterTable
+ALTER TABLE "payroll_runs" ALTER COLUMN "tipPool" SET DATA TYPE DECIMAL(14,4),
+ALTER COLUMN "totalNet" SET DATA TYPE DECIMAL(14,4);
+
+-- AlterTable
+ALTER TABLE "payroll_lines" ALTER COLUMN "basePay" SET DATA TYPE DECIMAL(14,4),
+ALTER COLUMN "tipShare" SET DATA TYPE DECIMAL(14,4),
+ALTER COLUMN "unpaidLeaveDeduction" SET DATA TYPE DECIMAL(14,4),
+ALTER COLUMN "netPay" SET DATA TYPE DECIMAL(14,4);
+
+-- AlterTable
+ALTER TABLE "expenses" ALTER COLUMN "amount" SET DATA TYPE DECIMAL(14,4);
+
+-- AlterTable
+ALTER TABLE "cash_closings" ALTER COLUMN "openingFloat" SET DATA TYPE DECIMAL(14,4),
+ALTER COLUMN "cashSales" SET DATA TYPE DECIMAL(14,4),
+ALTER COLUMN "cashExpenses" SET DATA TYPE DECIMAL(14,4),
+ALTER COLUMN "expectedCash" SET DATA TYPE DECIMAL(14,4),
+ALTER COLUMN "countedCash" SET DATA TYPE DECIMAL(14,4),
+ALTER COLUMN "variance" SET DATA TYPE DECIMAL(14,4);
+
+-- AlterTable
+ALTER TABLE "coupons" ALTER COLUMN "value" SET DATA TYPE DECIMAL(14,4),
+ALTER COLUMN "minOrderAmount" SET DATA TYPE DECIMAL(14,4),
+ALTER COLUMN "maxDiscount" SET DATA TYPE DECIMAL(14,4);
+
+-- AlterTable
+ALTER TABLE "promotions" ALTER COLUMN "value" SET DATA TYPE DECIMAL(14,4);
+
+-- AlterTable
+ALTER TABLE "service_logs" ALTER COLUMN "cost" SET DATA TYPE DECIMAL(14,4);
+
+-- AlterTable
+ALTER TABLE "budgets" ALTER COLUMN "amount" SET DATA TYPE DECIMAL(14,4);
+
+-- AlterTable
+ALTER TABLE "bank_transactions" ALTER COLUMN "amount" SET DATA TYPE DECIMAL(14,4);

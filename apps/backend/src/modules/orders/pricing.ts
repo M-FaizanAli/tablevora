@@ -25,16 +25,25 @@
 // working exactly as it did before this file existed.
 
 import type { TaxMode } from '@nodedr-restaurant/types';
+import { Prisma } from '@prisma/client';
+
+export function roundMoney(value: number, minorUnits = 2): number {
+  if (!Number.isInteger(minorUnits) || minorUnits < 0 || minorUnits > 4) {
+    throw new RangeError('Currency precision must be between 0 and 4 digits');
+  }
+  return new Prisma.Decimal(value).toDecimalPlaces(minorUnits).toNumber();
+}
 
 export function toEffectiveInclusiveUnitPrice(
   rawUnitPrice: number,
   taxRatePercent: number,
   taxMode: TaxMode,
+  minorUnits = 2,
 ): number {
   if (taxMode === 'EXCLUSIVE' && taxRatePercent > 0) {
-    return round2(rawUnitPrice * (1 + taxRatePercent / 100));
+    return roundMoney(rawUnitPrice * (1 + taxRatePercent / 100), minorUnits);
   }
-  return round2(rawUnitPrice);
+  return roundMoney(rawUnitPrice, minorUnits);
 }
 
 export interface PricedLineInput {
@@ -49,13 +58,13 @@ export interface PricedLine {
 }
 
 export function round2(value: number): number {
-  return Math.round((value + Number.EPSILON) * 100) / 100;
+  return roundMoney(value, 2);
 }
 
-export function priceLine(input: PricedLineInput): PricedLine {
-  const lineTotal = round2(input.unitPriceInclusive * input.quantity);
+export function priceLine(input: PricedLineInput, minorUnits = 2): PricedLine {
+  const lineTotal = roundMoney(input.unitPriceInclusive * input.quantity, minorUnits);
   const rate = input.taxRatePercent / 100;
-  const taxAmount = rate > 0 ? round2(lineTotal - lineTotal / (1 + rate)) : 0;
+  const taxAmount = rate > 0 ? roundMoney(lineTotal - lineTotal / (1 + rate), minorUnits) : 0;
   return { lineTotal, taxAmount };
 }
 
@@ -70,16 +79,18 @@ export function computeOrderTotals(
   lines: PricedLine[],
   discountPercent = 0,
   discountFlat = 0,
+  minorUnits = 2,
 ): OrderTotals {
-  const subtotal = round2(lines.reduce((sum, l) => sum + l.lineTotal, 0));
-  const taxAmount = round2(lines.reduce((sum, l) => sum + l.taxAmount, 0));
+  const subtotal = roundMoney(lines.reduce((sum, l) => sum + l.lineTotal, 0), minorUnits);
+  const taxAmount = roundMoney(lines.reduce((sum, l) => sum + l.taxAmount, 0), minorUnits);
 
-  const percentDiscount = round2((subtotal * discountPercent) / 100);
-  const discountAmount = round2(
+  const percentDiscount = roundMoney((subtotal * discountPercent) / 100, minorUnits);
+  const discountAmount = roundMoney(
     Math.min(percentDiscount + discountFlat, subtotal),
+    minorUnits,
   );
 
-  const totalAmount = round2(subtotal - discountAmount);
+  const totalAmount = roundMoney(subtotal - discountAmount, minorUnits);
 
   return { subtotal, taxAmount, discountAmount, totalAmount };
 }

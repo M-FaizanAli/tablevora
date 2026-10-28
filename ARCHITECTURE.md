@@ -146,16 +146,17 @@ represent, so the API keeps them apart and enforces each on the server.
 ### Currency precision expansion (pending)
 
 The current checkout, inventory, accounting, payroll, loyalty, gift-card and
-refund paths round money to two decimal places, and 53 Prisma money columns
-store two places. Country can be selected independently, but currencies with
+refund paths round money to two decimal places. Monetary columns have been
+widened to four decimal places without changing their maximum whole-unit
+range; existing two-decimal values migrate exactly. Country can be selected
+independently, but currencies with
 zero, three or four minor units must remain unavailable at registration until
 all of these paths use the restaurant currency's precision. Display helpers
 already know the correct number of digits; display support alone is not
 financial support.
 
-To enable those currencies safely, widen monetary columns to four decimal
-places in one migration (existing two-decimal values migrate exactly), pass
-minor-unit precision explicitly through pure pricing/settlement functions and
+To enable those currencies safely, pass minor-unit precision explicitly
+through pure pricing/settlement functions and
 each business service, and reject input values with excess fractional digits.
 Update POS, kiosk, QR ordering, payment, refund, wallet, gift card, inventory,
 accounting, payroll, report, and receipt paths together. Test JPY (0),

@@ -10,7 +10,7 @@
 // outside the taxable subtotal.
 
 import { BadRequestException } from '@nestjs/common';
-import { computeOrderTotals, round2, type PricedLine } from './pricing';
+import { computeOrderTotals, round2, roundMoney, type PricedLine } from './pricing';
 
 export interface BillInput {
   lines: PricedLine[];
@@ -24,6 +24,7 @@ export interface BillInput {
   loyaltyDiscountRequested?: number;
   tip?: number;
   deliveryFee?: number;
+  minorUnits?: number;
 }
 
 export interface Bill {
@@ -42,22 +43,25 @@ export interface Bill {
 }
 
 export function computeBill(input: BillInput): Bill {
+  const minorUnits = input.minorUnits ?? 2;
+  const round = (value: number) => roundMoney(value, minorUnits);
   const totals = computeOrderTotals(
     input.lines,
     input.discountPercent ?? 0,
     (input.discountFlat ?? 0) + (input.autoDiscount ?? 0),
+    minorUnits,
   );
-  const loyaltyDiscountAmount = round2(
+  const loyaltyDiscountAmount = round(
     Math.min(
       Math.max(input.loyaltyDiscountRequested ?? 0, 0),
       totals.totalAmount,
     ),
   );
-  const tipAmount = round2(input.tip ?? 0);
-  const deliveryFee = round2(input.deliveryFee ?? 0);
+  const tipAmount = round(input.tip ?? 0);
+  const deliveryFee = round(input.deliveryFee ?? 0);
   const taxAmount =
     totals.subtotal > 0
-      ? round2(
+      ? round(
           (totals.taxAmount * (totals.subtotal - totals.discountAmount)) /
             totals.subtotal,
         )
@@ -70,7 +74,7 @@ export function computeBill(input: BillInput): Bill {
     loyaltyDiscountAmount,
     tipAmount,
     deliveryFee,
-    totalDue: round2(
+    totalDue: round(
       totals.totalAmount - loyaltyDiscountAmount + tipAmount + deliveryFee,
     ),
   };
@@ -89,9 +93,10 @@ export function discountPercentOf(
 export function manualDiscountEntry(
   percent: number,
   flat: number,
+  minorUnits = 2,
 ): { type: 'PERCENT' | 'FIXED'; value: number } | null {
   if (percent > 0) return { type: 'PERCENT', value: round2(percent) };
-  if (flat > 0) return { type: 'FIXED', value: round2(flat) };
+  if (flat > 0) return { type: 'FIXED', value: roundMoney(flat, minorUnits) };
   return null;
 }
 
@@ -139,12 +144,14 @@ export function settlePayments(args: {
   /** Already applied from a gift card in this same settlement. */
   giftCardApplied?: number;
   allowPartial?: boolean;
+  minorUnits?: number;
 }): Settlement {
-  const balance = round2(args.balance);
-  const giftCardApplied = round2(args.giftCardApplied ?? 0);
+  const round = (value: number) => roundMoney(value, args.minorUnits ?? 2);
+  const balance = round(args.balance);
+  const giftCardApplied = round(args.giftCardApplied ?? 0);
 
   const lines: SettledPayment[] = args.payments.map((p) => {
-    const amount = round2(p.amount);
+    const amount = round(p.amount);
     if (!(amount > 0)) {
       throw new BadRequestException('Each payment must be more than zero');
     }
@@ -154,7 +161,7 @@ export function settlePayments(args: {
           'Only a cash payment can have an amount received',
         );
       }
-      const tendered = round2(p.tendered);
+      const tendered = round(p.tendered);
       if (tendered < amount) {
         throw new BadRequestException(
           'The amount received cannot be less than the payment',
@@ -164,7 +171,7 @@ export function settlePayments(args: {
         method: p.method,
         amount,
         tendered,
-        changeGiven: round2(tendered - amount),
+        changeGiven: round(tendered - amount),
         reference: p.reference,
       };
     }
@@ -177,7 +184,7 @@ export function settlePayments(args: {
     };
   });
 
-  let excess = round2(
+  let excess = round(
     lines.reduce((sum, l) => sum + l.amount, 0) + giftCardApplied - balance,
   );
   if (excess > 0) {
@@ -186,10 +193,10 @@ export function settlePayments(args: {
       if (line.method !== 'CASH') continue;
       const take = Math.min(excess, line.amount);
       const handedOver = line.tendered ?? line.amount;
-      line.amount = round2(line.amount - take);
+      line.amount = round(line.amount - take);
       line.tendered = handedOver;
-      line.changeGiven = round2(handedOver - line.amount);
-      excess = round2(excess - take);
+      line.changeGiven = round(handedOver - line.amount);
+      excess = round(excess - take);
     }
     if (excess > 0) {
       throw new BadRequestException(
@@ -199,10 +206,10 @@ export function settlePayments(args: {
   }
 
   const kept = lines.filter((l) => l.amount > 0);
-  const paidNow = round2(
+  const paidNow = round(
     kept.reduce((sum, l) => sum + l.amount, 0) + giftCardApplied,
   );
-  const balanceAfter = round2(balance - paidNow);
+  const balanceAfter = round(balance - paidNow);
   const fullyPaid = balanceAfter <= 0;
 
   if (!fullyPaid && !args.allowPartial) {
@@ -218,7 +225,7 @@ export function settlePayments(args: {
     payments: kept,
     paidNow,
     balanceAfter: Math.max(balanceAfter, 0),
-    changeDue: round2(kept.reduce((sum, l) => sum + (l.changeGiven ?? 0), 0)),
+    changeDue: round(kept.reduce((sum, l) => sum + (l.changeGiven ?? 0), 0)),
     fullyPaid,
   };
 }

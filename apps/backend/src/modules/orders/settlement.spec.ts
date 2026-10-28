@@ -90,6 +90,22 @@ describe('computeBill', () => {
     expect(b.totalDue).toBe(92.49);
   });
 
+  it('keeps a three-decimal currency precise through tax and settlement', () => {
+    const priced = priceLine({ quantity: 2, unitPriceInclusive: 1.234, taxRatePercent: 5 }, 3);
+    const bill = computeBill({ lines: [priced], minorUnits: 3 });
+    expect(bill.subtotal).toBe(2.468);
+    const paid = settlePayments({ balance: bill.totalDue, payments: [{ method: 'CASH', amount: 2.468, tendered: 3 }], minorUnits: 3 });
+    expect(paid.changeDue).toBe(0.532);
+    expect(paid.balanceAfter).toBe(0);
+  });
+
+  it('rounds a zero-decimal currency before payment', () => {
+    const priced = priceLine({ quantity: 1, unitPriceInclusive: 101, taxRatePercent: 8 }, 0);
+    const bill = computeBill({ lines: [priced], minorUnits: 0, discountPercent: 10 });
+    expect(bill.totalDue).toBe(91);
+    expect(settlePayments({ balance: bill.totalDue, payments: [{ method: 'CASH', amount: 91 }], minorUnits: 0 }).fullyPaid).toBe(true);
+  });
+
   it('handles an empty bill', () => {
     expect(computeBill({ lines: [] }).totalDue).toBe(0);
   });

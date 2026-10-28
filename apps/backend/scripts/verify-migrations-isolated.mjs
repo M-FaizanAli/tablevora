@@ -25,6 +25,26 @@ try {
   const isolated = new PrismaClient({ datasources: { db: { url: isolatedUrl.toString() } } });
   try {
     const restaurants = await isolated.restaurant.count();
+    const moneyColumns = await isolated.$queryRawUnsafe(
+      `SELECT table_name, column_name, numeric_scale FROM information_schema.columns
+       WHERE table_schema = $1 AND (
+         (table_name = 'menu_items' AND column_name = 'price') OR
+         (table_name = 'orders' AND column_name = 'totalAmount') OR
+         (table_name = 'payments' AND column_name = 'amount') OR
+         (table_name = 'customers' AND column_name = 'walletBalance')
+       )`,
+      schemaName,
+    );
+    if (moneyColumns.length !== 4 || moneyColumns.some((column) => column.numeric_scale !== 4)) {
+      throw new Error('Monetary columns must store four fractional digits.');
+    }
+    const precisionProbe = await isolated.restaurant.create({
+      data: { name: 'Precision probe', currency: 'KWD', loyaltyPointValue: '1.234' },
+      select: { loyaltyPointValue: true },
+    });
+    if (precisionProbe.loyaltyPointValue.toString() !== '1.234') {
+      throw new Error('Three-decimal money did not round-trip through PostgreSQL.');
+    }
     console.log('Migrations applied successfully to isolated schema (' + restaurants + ' restaurants; fresh schema expected 0).');
   } finally { await isolated.$disconnect(); }
 } finally {
