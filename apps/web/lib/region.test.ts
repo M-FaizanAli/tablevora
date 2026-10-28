@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 import {
   COUNTRY_CURRENCY,
+  currencyMinorUnits,
   registerSchema,
   suggestedTax,
 } from "@nodedr-restaurant/types";
@@ -41,4 +42,12 @@ test("rejects invalid country, currency, and time zone", () => {
 test("formats USD and PKR with their own currency codes", () => {
   assert.match(formatCurrency(1234.5, "USD", "en-US"), /\$1,234\.50/);
   assert.match(formatCurrency(1234.5, "PKR", "en-PK"), /1,234\.50/);
+});
+
+test("formats zero- and three-decimal currencies without inventing cents", () => {
+  assert.equal(currencyMinorUnits("JPY"), 0);
+  assert.equal(currencyMinorUnits("KWD"), 3);
+  assert.match(formatCurrency(1234, "JPY", "ja-JP"), /1,234/);
+  assert.doesNotMatch(formatCurrency(1234, "JPY", "ja-JP"), /\.00/);
+  assert.match(formatCurrency(1.234, "KWD", "en-KW"), /1\.234/);
 });

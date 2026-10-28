@@ -10,6 +10,7 @@
 // too; only which rows get printed differs.
 
 import {
+  currencyMinorUnits,
   resolveTaxIdLabel,
   resolveTaxLabel,
   TAX_REGIME_PRESETS,
@@ -137,7 +138,7 @@ export function buildReceiptEscPosJob({
 } & JobFormat): PrintResult {
   const w = new EscposWriter(profile);
   const sym = currencySymbol(w, currency);
-  const money = (n: number) => `${sym}${Number(n).toFixed(2)}`;
+  const money = (n: number) => `${sym}${Number(n).toFixed(currencyMinorUnits(currency))}`;
   const taxLabel = resolveTaxLabel(branch.taxRegime, branch.taxLabel);
   const taxIdValue =
     branch.taxId ||

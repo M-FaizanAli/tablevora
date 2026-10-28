@@ -1,3 +1,5 @@
+import { currencyMinorUnits } from "@nodedr-restaurant/types";
+
 let activeCurrency = "INR";
 let activeLocale = "en-IN";
 
@@ -19,10 +21,11 @@ export function formatCurrency(
   locale = activeLocale,
 ): string {
   const amount = typeof value === "string" ? Number(value) : value;
+  const digits = currencyMinorUnits(currency);
   return new Intl.NumberFormat(locale, {
     style: "currency",
     currency,
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
+    minimumFractionDigits: digits,
+    maximumFractionDigits: digits,
   }).format(amount);
 }

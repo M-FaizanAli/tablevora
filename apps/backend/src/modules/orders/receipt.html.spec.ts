@@ -48,6 +48,11 @@ const verifactu = {
 };
 
 describe('receipt HTML with VERI*FACTU', () => {
+  it('uses the currency minor units when printing a receipt', () => {
+    expect(buildReceiptHtml({ ...base, currency: 'JPY' })).toContain('JPY 11');
+    expect(buildReceiptHtml({ ...base, currency: 'JPY' })).not.toContain('JPY 11.00');
+    expect(buildReceiptHtml({ ...base, currency: 'KWD' })).toContain('KWD 11.000');
+  });
   it('draws an inline 35 mm QR with the legends on a paid receipt', () => {
     const html = buildReceiptHtml({
       ...base,

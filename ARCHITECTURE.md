@@ -143,6 +143,27 @@ represent, so the API keeps them apart and enforces each on the server.
   `requestId` so a retry or double tap records its payments once. A gift card
   is recorded as a `GIFT_CARD` payment too, so "amount paid" is complete.
 
+### Currency precision expansion (pending)
+
+The current checkout, inventory, accounting, payroll, loyalty, gift-card and
+refund paths round money to two decimal places, and 53 Prisma money columns
+store two places. Country can be selected independently, but currencies with
+zero, three or four minor units must remain unavailable at registration until
+all of these paths use the restaurant currency's precision. Display helpers
+already know the correct number of digits; display support alone is not
+financial support.
+
+To enable those currencies safely, widen monetary columns to four decimal
+places in one migration (existing two-decimal values migrate exactly), pass
+minor-unit precision explicitly through pure pricing/settlement functions and
+each business service, and reject input values with excess fractional digits.
+Update POS, kiosk, QR ordering, payment, refund, wallet, gift card, inventory,
+accounting, payroll, report, and receipt paths together. Test JPY (0),
+USD/PKR (2), KWD (3), and a four-decimal currency against server totals,
+stored values, printed receipts, and partial/refund flows before making the
+full currency list selectable. Do not use a process-wide mutable precision
+value: requests from different restaurants can run concurrently.
+
 ## Monorepo layout
 
 ```

@@ -16,6 +16,7 @@
 import { qrSvg } from '../verifactu/verifactu.qr';
 import type { ReceiptVerifactu } from './escpos-receipt';
 import {
+  currencyMinorUnits,
   resolveTaxIdLabel,
   resolveTaxLabel,
   TAX_REGIME_PRESETS,
@@ -99,7 +100,7 @@ export function buildReceiptHtml({
   order: ReceiptOrder;
 }): string {
   const sym = CURRENCY_SYMBOLS[currency] ?? `${currency} `;
-  const money = (n: number) => `${sym}${Number(n).toFixed(2)}`;
+  const money = (n: number) => `${sym}${Number(n).toFixed(currencyMinorUnits(currency))}`;
   const dateStr = new Date(order.createdAt).toLocaleString();
   const taxLabel = resolveTaxLabel(branch.taxRegime, branch.taxLabel);
   // gstNumber is the pre-multi-region field every India install already

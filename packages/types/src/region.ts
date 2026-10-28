@@ -11,8 +11,15 @@ export const COUNTRY_CURRENCY: Readonly<Record<string,string>> = {"AD":"EUR","AE
 // Monetary storage and settlement currently use 2 decimal places. Offer only
 // currencies that fit that precision; PKR retains its fractional paisa even
 // though Intl's default display for en-PK omits it.
+export function currencyMinorUnits(code: string): number {
+  // The product has always accounted for paisa. CLDR's en-PK display default
+  // may omit them, so retain two digits for PKR in every output format.
+  if (code === "PKR") return 2;
+  return new Intl.NumberFormat("en", { style: "currency", currency: code })
+    .resolvedOptions().maximumFractionDigits ?? 2;
+}
 export const CURRENCY_CODES = Intl.supportedValuesOf("currency").filter((code) =>
-  code === "PKR" || new Intl.NumberFormat("en", { style: "currency", currency: code }).resolvedOptions().maximumFractionDigits === 2
+  currencyMinorUnits(code) === 2
 );
 const CURRENCY_SET: ReadonlySet<string> = new Set(CURRENCY_CODES);
 export const countryCodeSchema = z.string().trim().toUpperCase().refine((v) => COUNTRY_SET.has(v), "Choose a valid country");
