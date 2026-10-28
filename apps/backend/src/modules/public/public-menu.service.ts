@@ -36,6 +36,9 @@ export class PublicMenuService {
     return {
       branchName: branch.name,
       tableName: table.name ?? `Table ${table.number}`,
+      currency: branch.restaurant.currency,
+      country: branch.country,
+      taxMode: branch.taxMode,
       categories,
     };
   }

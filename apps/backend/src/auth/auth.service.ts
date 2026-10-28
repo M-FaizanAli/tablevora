@@ -117,10 +117,21 @@ export class AuthService {
 
     await this.prisma.$transaction(async (tx) => {
       const restaurant = await tx.restaurant.create({
-        data: { name: dto.restaurantName, status: 'PENDING' },
+        data: { name: dto.restaurantName, currency: dto.currency, timezone: dto.timezone, status: 'PENDING' },
       });
       const branch = await tx.branch.create({
-        data: { restaurantId: restaurant.id, name: dto.branchName },
+        data: {
+          restaurantId: restaurant.id,
+          name: dto.branchName,
+          country: dto.country,
+          taxRegime: dto.taxRegime,
+          taxMode: dto.taxMode,
+          defaultTaxRatePercent: dto.defaultTaxRatePercent,
+          taxLabel: dto.taxLabel || null,
+          taxId: dto.taxId || null,
+          address: dto.branchAddress || null,
+          phone: dto.branchPhone || null,
+        },
       });
 
       let ownerRoleId = '';

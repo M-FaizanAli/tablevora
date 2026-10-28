@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { countryCodeSchema, currencyCodeSchema, taxRateSchema, timezoneSchema } from "./region";
 
 // The restaurant's brand name renders in the app shell's top-of-sidebar
 // header (fixed-width column, next to the logo) — a name much past this
@@ -13,8 +14,8 @@ export const restaurantSettingsSchema = z.object({
   // login screen once set. Square, ~256x256px+ PNG/SVG with a transparent
   // background reads best in that slot — see the settings page hint text.
   logoUrl: z.string().max(2048).optional().nullable(),
-  currency: z.string().optional(),
-  timezone: z.string().optional(),
+  currency: currencyCodeSchema.optional(),
+  timezone: timezoneSchema.optional(),
   // UPI id such as "name@okbank" (VPA format per NPCI: handle@psp).
   upiVpa: z
     .string()
@@ -37,7 +38,8 @@ export const branchSettingsSchema = z.object({
   gstNumber: z.string().optional(),
   // Multi-region tax config — see tax.ts for the regime presets this
   // pairs with (label, default mode, CGST/SGST split).
-  country: z.string().length(2).optional(),
+  country: countryCodeSchema.optional(),
+  defaultTaxRatePercent: taxRateSchema.optional(),
   taxRegime: z.enum(TAX_REGIMES).optional(),
   taxMode: z.enum(TAX_MODES).optional(),
   taxLabel: z.string().max(30).optional().nullable(),

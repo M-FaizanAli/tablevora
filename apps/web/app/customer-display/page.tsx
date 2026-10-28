@@ -14,12 +14,13 @@ import { QRCodeSVG } from "qrcode.react";
 export default function CustomerDisplayPage() {
   const [state, setState] = useState<DisplayState>({ kind: "idle" });
   useEffect(() => subscribeDisplay(setState), []);
+  const money = (value: number) => formatCurrency(value, state.kind === "idle" ? "INR" : state.currency, state.kind === "idle" ? "en-IN" : state.locale);
 
   // Chime when the payment lands. Browsers only allow audio after a click on
   // the page, so the first tap on the display arms sound for the session.
   const [soundOn, setSoundOn] = useState(false);
   useEffect(() => {
-    if (state.kind === "paid" && soundOn) playPaymentReceived(formatCurrency(state.total));
+    if (state.kind === "paid" && soundOn) playPaymentReceived(money(state.total));
   }, [state, soundOn]);
 
   // After "paid", fall back to the welcome screen for the next guest.
@@ -56,13 +57,13 @@ export default function CustomerDisplayPage() {
                   <span className="mr-4 text-muted-foreground">{l.quantity}×</span>
                   {l.name}
                 </span>
-                <span className="tabular-nums">{formatCurrency(l.total)}</span>
+                <span className="tabular-nums">{money(l.total)}</span>
               </li>
             ))}
           </ul>
           <div className="mt-6 flex items-baseline justify-between border-t-2 border-foreground pt-6 text-5xl font-semibold">
             <span>Total</span>
-            <span className="tabular-nums">{formatCurrency(state.subtotal)}</span>
+            <span className="tabular-nums">{money(state.subtotal)}</span>
           </div>
         </div>
       )}
@@ -70,7 +71,7 @@ export default function CustomerDisplayPage() {
       {state.kind === "upi" && (
         <div className="m-auto flex flex-col items-center text-center">
           <p className="text-3xl text-muted-foreground">Scan to pay</p>
-          <p className="mt-2 text-7xl font-semibold tabular-nums tracking-tight">{formatCurrency(state.total)}</p>
+          <p className="mt-2 text-7xl font-semibold tabular-nums tracking-tight">{money(state.total)}</p>
           <div className="mt-8 rounded-3xl bg-white p-6 shadow-xl">
             <QRCodeSVG value={state.uri} size={320} level="M" marginSize={1} />
           </div>
@@ -83,7 +84,7 @@ export default function CustomerDisplayPage() {
       {state.kind === "paid" && (
         <div className="m-auto text-center">
           <p className="text-6xl font-semibold tracking-tight">Thank you!</p>
-          <p className="mt-4 text-3xl text-muted-foreground tabular-nums">{formatCurrency(state.total)} paid</p>
+          <p className="mt-4 text-3xl text-muted-foreground tabular-nums">{money(state.total)} paid</p>
         </div>
       )}
     </main>

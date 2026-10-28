@@ -157,6 +157,19 @@ export class OrdersService {
     return branch?.taxMode ?? 'INCLUSIVE';
   }
 
+  private async formatBranchAmount(branchId: string, amount: number): Promise<string> {
+    const branch = await this.prisma.branch.findUnique({
+      where: { id: branchId },
+      select: { country: true, restaurant: { select: { currency: true } } },
+    });
+    return new Intl.NumberFormat(`en-${branch?.country ?? 'IN'}`, {
+      style: 'currency',
+      currency: branch?.restaurant?.currency ?? 'INR',
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    }).format(amount);
+  }
+
   async createOrder(
     branchId: string,
     userId: string,
@@ -289,7 +302,7 @@ export class OrdersService {
         }
         if (totals.subtotal < Number(zone.minOrderAmount)) {
           throw new BadRequestException(
-            `Minimum order for ${zone.name} is ₹${Number(zone.minOrderAmount)}`,
+            `Minimum order for ${zone.name} is ${await this.formatBranchAmount(branchId, Number(zone.minOrderAmount))}`,
           );
         }
         delivery.deliveryZoneId = zone.id;
@@ -404,7 +417,7 @@ export class OrdersService {
         await this.notifications.notifyByPermission(branchId, 'orders.accept', {
           type: 'order.pending',
           title: 'New online order — accept?',
-          body: `Order ${full.orderNumber} (${full.type.replace('_', ' ')})${who ? ` — ${who}` : ''} · ₹${Number(full.totalAmount)}`,
+          body: `Order ${full.orderNumber} (${full.type.replace('_', ' ')})${who ? ` — ${who}` : ''} · ${await this.formatBranchAmount(branchId, Number(full.totalAmount))}`,
           entity: 'Order',
           entityId: full.id,
         });
@@ -1460,6 +1473,12 @@ export class OrdersService {
       where: { id: branchId },
       include: { restaurant: true },
     });
+    if (
+      branch.restaurant.currency !== 'INR' &&
+      dto.payments.some((payment) => payment.method === 'UPI')
+    ) {
+      throw new BadRequestException('UPI payments require an INR restaurant currency');
+    }
     const loyaltyEarnPerCurrency = branch.restaurant.loyaltyEarnPerCurrency;
 
     // A customer can be attached at billing time instead of when the order

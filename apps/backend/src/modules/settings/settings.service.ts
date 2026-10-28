@@ -19,6 +19,21 @@ export class SettingsService {
     private readonly audit: AuditService,
   ) {}
 
+  async getRegion(restaurantId: string, branchId: string) {
+    const branch = await this.prisma.branch.findFirst({
+      where: { id: branchId, restaurantId },
+      select: { country: true, taxMode: true, defaultTaxRatePercent: true, restaurant: { select: { currency: true, timezone: true } } },
+    });
+    if (!branch) throw new NotFoundException('Branch not found');
+    return {
+      country: branch.country,
+      currency: branch.restaurant.currency,
+      timezone: branch.restaurant.timezone,
+      taxMode: branch.taxMode,
+      defaultTaxRatePercent: branch.defaultTaxRatePercent,
+    };
+  }
+
   async get(restaurantId: string, branchId: string) {
     const restaurant = await this.prisma.restaurant.findUnique({
       where: { id: restaurantId },
@@ -37,6 +52,25 @@ export class SettingsService {
     userId: string,
     dto: RestaurantSettingsDto,
   ) {
+    if (dto.currency !== undefined) {
+      const current = await this.prisma.restaurant.findUniqueOrThrow({
+        where: { id: restaurantId },
+        select: { currency: true },
+      });
+      if (dto.currency !== current.currency) {
+        const [menuItems, orders, customers, giftCards] = await Promise.all([
+          this.prisma.menuItem.count({ where: { branch: { restaurantId } } }),
+          this.prisma.order.count({ where: { branch: { restaurantId } } }),
+          this.prisma.customer.count({ where: { branch: { restaurantId } } }),
+          this.prisma.giftCard.count({ where: { branch: { restaurantId } } }),
+        ]);
+        if (menuItems || orders || customers || giftCards) {
+          throw new BadRequestException(
+            'Currency cannot be changed after menu items, orders, customers, or gift cards exist. Create a new restaurant account for another accounting currency.',
+          );
+        }
+      }
+    }
     const updated = await this.prisma.restaurant.update({
       where: { id: restaurantId },
       data: dto,

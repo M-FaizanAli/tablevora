@@ -28,7 +28,7 @@ import {
   useUploadItemImage,
   type MenuCategory,
 } from "@/hooks/use-menu";
-import { useSettings } from "@/hooks/use-settings";
+import { useRegion } from "@/hooks/use-settings";
 import { ApiError } from "@/lib/api";
 import { prepareMenuImage } from "@/lib/prepare-menu-image";
 
@@ -45,7 +45,7 @@ export function AddItemDialog({
   const [stationId, setStationId] = useState<string>("");
   const [price, setPrice] = useState("");
   const [halfPrice, setHalfPrice] = useState("");
-  const [taxRatePercent, setTaxRatePercent] = useState("5");
+  const [taxRatePercent, setTaxRatePercent] = useState("");
   const [isVeg, setIsVeg] = useState(true);
   const [imageUrl, setImageUrl] = useState<string | null>(null);
   const [imagePreview, setImagePreview] = useState<string | undefined>(undefined);
@@ -54,18 +54,19 @@ export function AddItemDialog({
   useEffect(() => () => { if (imagePreview?.startsWith('blob:')) URL.revokeObjectURL(imagePreview); }, [imagePreview]);
 
   const { data: stations } = useStations(branchId);
-  const { data: settings } = useSettings(branchId);
+  const { data: region } = useRegion(branchId);
   const createItem = useCreateMenuItem(branchId);
   const uploadImage = useUploadItemImage();
   const priceLabel =
-    settings?.branch.taxMode === "EXCLUSIVE" ? "Price (excl. tax)" : "Price (incl. tax)";
+    region?.taxMode === "EXCLUSIVE" ? "Price (excl. tax)" : "Price (incl. tax)";
+  const branchTaxRate = region?.defaultTaxRatePercent ?? "0";
 
   const reset = () => {
     setName("");
     setCategoryId("");
     setStationId("");
     setPrice("");
-    setTaxRatePercent("5");
+    setTaxRatePercent("");
     setIsVeg(true);
     setImageUrl(null);
     setImagePreview(undefined);
@@ -102,7 +103,7 @@ export function AddItemDialog({
         stationId: stationId || undefined,
         price: Number(price),
         halfPrice: halfPrice.trim() === "" ? undefined : Number(halfPrice),
-        taxRatePercent: Number(taxRatePercent),
+        taxRatePercent: taxRatePercent.trim() === "" ? undefined : Number(taxRatePercent),
         isVeg,
         isVegan: false,
         isJain: false,
@@ -233,17 +234,18 @@ export function AddItemDialog({
               />
             </div>
             <div className="flex flex-col gap-2">
-              <Label htmlFor="tax">Tax rate %</Label>
+              <Label htmlFor="tax">Tax rate % (optional override)</Label>
               <Input
                 id="tax"
                 type="number"
                 min="0"
                 max="100"
-                step="0.01"
+                step="0.001"
+                placeholder={String(branchTaxRate)}
                 value={taxRatePercent}
                 onChange={(e) => setTaxRatePercent(e.target.value)}
-                required
               />
+              <p className="text-xs text-muted-foreground">Blank uses this branch&apos;s {branchTaxRate}% default.</p>
             </div>
           </div>
 

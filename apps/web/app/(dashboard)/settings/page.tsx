@@ -37,6 +37,7 @@ import {
   type RestaurantSettings,
 } from "@/hooks/use-settings";
 import { ApiError } from "@/lib/api";
+import { countryOptions, currencyOptions, timeZoneOptions } from "@/lib/region-options";
 
 export default function SettingsPage() {
   const { branchId } = useBranch();
@@ -194,6 +195,7 @@ function GeneralSettingsForm({
   const [taxMode, setTaxMode] = useState<TaxMode>(branch.taxMode);
   const [taxLabel, setTaxLabel] = useState(branch.taxLabel ?? "");
   const [taxId, setTaxId] = useState(branch.taxId ?? "");
+  const [defaultTaxRatePercent, setDefaultTaxRatePercent] = useState(String(branch.defaultTaxRatePercent));
 
   const preset = TAX_REGIME_PRESETS[taxRegime];
 
@@ -234,6 +236,7 @@ function GeneralSettingsForm({
         taxMode,
         taxLabel: taxLabel || null,
         taxId: taxId || null,
+        defaultTaxRatePercent: Number(defaultTaxRatePercent),
       },
       {
         onSuccess: () => toast.success("Branch details saved"),
@@ -245,11 +248,10 @@ function GeneralSettingsForm({
   const onRegimeChange = (value: TaxRegime | null) => {
     if (!value) return;
     setTaxRegime(value);
-    // Switching regimes resets to that regime's own mode/country by
-    // default — a picker that silently kept the old mode would quietly
-    // mis-price every item on this branch (see settings.service.ts).
+    // Keep the branch's real country; changing the tax system must not
+    // silently move the restaurant or relabel its currency.
     setTaxMode(TAX_REGIME_PRESETS[value].defaultMode);
-    setCountry(TAX_REGIME_PRESETS[value].defaultCountry);
+    setTaxLabel(TAX_REGIME_PRESETS[value].taxLabel);
   };
 
   return (
@@ -330,19 +332,18 @@ function GeneralSettingsForm({
           <div className="grid grid-cols-2 gap-4">
             <div className="flex flex-col gap-2">
               <Label htmlFor="r-currency">Currency</Label>
-              <Input
-                id="r-currency"
-                value={currency}
-                onChange={(e) => setCurrency(e.target.value.toUpperCase())}
-                maxLength={3}
-                required
-              />
+              <select id="r-currency" value={currency} onChange={(e) => setCurrency(e.target.value)} required className="h-10 rounded-md border bg-background px-3">
+                {currencyOptions.map(({ code, name }) => <option key={code} value={code}>{code} — {name}</option>)}
+              </select>
             </div>
             <div className="flex flex-col gap-2">
               <Label htmlFor="r-timezone">Timezone</Label>
-              <Input id="r-timezone" value={timezone} onChange={(e) => setTimezone(e.target.value)} required />
+              <select id="r-timezone" value={timezone} onChange={(e) => setTimezone(e.target.value)} required className="h-10 rounded-md border bg-background px-3">
+                {timeZoneOptions.map((zone) => <option key={zone} value={zone}>{zone}</option>)}
+              </select>
             </div>
           </div>
+          <p className="text-xs text-muted-foreground">Set currency before adding menu items, orders, customers, or gift cards. Once any exist, use a new restaurant account for a different accounting currency.</p>
 
           <div className="flex flex-col gap-2 border-t border-border pt-4">
             <h3 className="text-sm font-medium text-foreground">Loyalty program</h3>
@@ -432,8 +433,8 @@ function GeneralSettingsForm({
               <Input id="b-phone" value={phone} onChange={(e) => setPhone(e.target.value)} />
             </div>
             <div className="flex flex-col gap-2">
-              <Label htmlFor="b-gst">GST number (legacy)</Label>
-              <Input id="b-gst" value={gstNumber} onChange={(e) => setGstNumber(e.target.value)} />
+              {country === "IN" && <><Label htmlFor="b-gst">GST number (legacy)</Label>
+              <Input id="b-gst" value={gstNumber} onChange={(e) => setGstNumber(e.target.value)} /></>}
             </div>
           </div>
 
@@ -473,22 +474,23 @@ function GeneralSettingsForm({
             </div>
           </div>
           <p className="text-xs text-muted-foreground">
-            {preset.exampleRates} — set the exact rate per menu item under Menu.
+            Confirm the exact rate for this location. New menu items use the branch default; individual items may override it.
           </p>
           <div className="grid grid-cols-2 gap-4">
             <div className="flex flex-col gap-2">
-              <Label htmlFor="b-country">Country code</Label>
-              <Input
-                id="b-country"
-                value={country}
-                onChange={(e) => setCountry(e.target.value.toUpperCase())}
-                maxLength={2}
-              />
+              <Label htmlFor="b-country">Country</Label>
+              <select id="b-country" value={country} onChange={(e) => setCountry(e.target.value)} className="h-10 rounded-md border bg-background px-3">
+                {countryOptions.map(({ code, name }) => <option key={code} value={code}>{name}</option>)}
+              </select>
             </div>
             <div className="flex flex-col gap-2">
               <Label htmlFor="b-tax-id">{TAX_REGIME_PRESETS[taxRegime].taxIdLabel}</Label>
               <Input id="b-tax-id" value={taxId} onChange={(e) => setTaxId(e.target.value)} />
             </div>
+          </div>
+          <div className="flex flex-col gap-2">
+            <Label htmlFor="b-default-tax">Default tax rate for new menu items (%)</Label>
+            <Input id="b-default-tax" type="number" min="0" max="100" step="0.001" value={defaultTaxRatePercent} onChange={(e) => setDefaultTaxRatePercent(e.target.value)} required />
           </div>
           <div className="flex flex-col gap-2">
             <Label htmlFor="b-tax-label">Receipt label override (optional)</Label>

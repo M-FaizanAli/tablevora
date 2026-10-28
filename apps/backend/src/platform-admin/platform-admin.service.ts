@@ -96,10 +96,21 @@ export class PlatformAdminService {
 
     const tenant = await this.prisma.$transaction(async (tx) => {
       const restaurant = await tx.restaurant.create({
-        data: { name: input.restaurantName, status: 'PENDING' },
+        data: { name: input.restaurantName, currency: input.currency, timezone: input.timezone, status: 'PENDING' },
       });
       const branch = await tx.branch.create({
-        data: { restaurantId: restaurant.id, name: input.branchName },
+        data: {
+          restaurantId: restaurant.id,
+          name: input.branchName,
+          country: input.country,
+          taxRegime: input.taxRegime,
+          taxMode: input.taxMode,
+          defaultTaxRatePercent: input.defaultTaxRatePercent,
+          taxLabel: input.taxLabel || null,
+          taxId: input.taxId || null,
+          address: input.branchAddress || null,
+          phone: input.branchPhone || null,
+        },
       });
       let ownerRoleId = '';
       for (const roleName of STAFF_ROLES) {

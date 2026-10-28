@@ -36,6 +36,18 @@ export class SettingsController {
     private readonly branchAccess: BranchAccessService,
   ) {}
 
+  // Every staff screen needs the tenant's currency and branch country.
+  // Keep this read-only profile separate from settings.manage.
+  @Auth()
+  @Get('region')
+  async region(
+    @CurrentUser() user: SessionUser,
+    @Query('branchId') branchId: string,
+  ) {
+    await this.branchAccess.assertAccess(user.restaurantId, branchId);
+    return this.settingsService.getRegion(user.restaurantId, branchId);
+  }
+
   @Auth('settings.manage')
   @Get()
   async get(

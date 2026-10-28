@@ -14,12 +14,14 @@ import { useI18n } from "@/lib/i18n/context";
 import { api, ApiError } from "@/lib/api";
 import { playSuccessChime, vibrateSuccess } from "@/lib/celebrate";
 import { formatCurrency } from "@/lib/format";
+import { toInclusiveUnitPrice } from "@/lib/kiosk-basket";
 
 interface PublicMenuItem {
   id: string;
   name: string;
   description: string | null;
   price: string;
+  taxRatePercent: string;
   isVeg: boolean;
   modifierGroups: {
     modifierGroup: {
@@ -72,6 +74,9 @@ interface PublicMenuCategory {
 interface PublicMenuResponse {
   branchName: string;
   tableName: string;
+  currency: string;
+  country: string;
+  taxMode: "INCLUSIVE" | "EXCLUSIVE";
   categories: PublicMenuCategory[];
 }
 
@@ -157,6 +162,7 @@ export default function PublicMenuPage({
 
   const cartCount = cart.reduce((sum, l) => sum + l.quantity, 0);
   const cartTotal = cart.reduce((sum, l) => sum + l.unitPrice * l.quantity, 0);
+  const money = (value: number | string) => formatCurrency(value, data?.currency ?? "INR", `en-${data?.country ?? "IN"}`);
   const quantityOfItem = (itemId: string) =>
     cart.filter((l) => l.menuItemId === itemId).reduce((sum, l) => sum + l.quantity, 0);
 
@@ -167,7 +173,7 @@ export default function PublicMenuPage({
       if (existing) return prev.map((l) => (l.key === key ? { ...l, quantity: l.quantity + 1 } : l));
       return [
         ...prev,
-        { key, menuItemId: item.id, modifierIds, label, unitPrice: Number(item.price) + extra, quantity: 1 },
+        { key, menuItemId: item.id, modifierIds, label, unitPrice: toInclusiveUnitPrice(Number(item.price) + extra, Number(item.taxRatePercent), data?.taxMode ?? "INCLUSIVE"), quantity: 1 },
       ];
     });
   };
@@ -312,7 +318,7 @@ export default function PublicMenuPage({
                               </p>
                             )}
                             <span className="mt-1 block text-sm font-medium tabular-nums text-foreground">
-                              {formatCurrency(item.price)}
+                              {money(item.price)}
                             </span>
                           </div>
                         </div>
@@ -416,7 +422,7 @@ export default function PublicMenuPage({
       />
 
       <footer className="border-t border-border px-5 py-6 text-center text-xs text-muted-foreground">
-        {t("order.pricesIncludeTax")}
+        {data?.taxMode === "EXCLUSIVE" ? "Applicable tax is added at checkout." : t("order.pricesIncludeTax")}
       </footer>
 
       {cartCount > 0 && (
@@ -429,7 +435,7 @@ export default function PublicMenuPage({
             >
               {placeOrder.isPending
                 ? t("order.placingOrder")
-                : `${t("order.placeOrder")} — ${cartCount} ${cartCount > 1 ? t("order.items") : t("order.item")} · ${formatCurrency(cartTotal)}`}
+                : `${t("order.placeOrder")} — ${cartCount} ${cartCount > 1 ? t("order.items") : t("order.item")} · ${money(cartTotal)}`}
             </Button>
           </div>
           {placeOrder.isError && (

@@ -5,6 +5,7 @@ import { useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useState } from "react";
 import { StatusNote, useNoteToast } from "@/components/ui/status-note";
 import { publishDisplay } from "@/lib/customer-display";
+import { formatCurrency, getActiveCurrency, getActiveLocale } from "@/lib/format";
 import { BranchNotice } from "@/components/layout/branch-notice";
 import { CartPanel, type DeliveryDetails, type PosOrderType } from "@/components/pos/cart-panel";
 import { cartLineKey, portionText, type CartLine, type Portion } from "@/components/pos/cart-line";
@@ -26,7 +27,6 @@ import {
 } from "@/hooks/use-orders";
 import { useFloors, type RestaurantTable } from "@/hooks/use-tables";
 import { ApiError } from "@/lib/api";
-import { formatCurrency } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
 export default function PosPage() {
@@ -88,6 +88,8 @@ function PosPageInner() {
               total: l.unitPrice * l.quantity,
             })),
             subtotal: lines.reduce((s, l) => s + l.unitPrice * l.quantity, 0),
+            currency: getActiveCurrency(),
+            locale: getActiveLocale(),
           },
     );
   }, [lines, activeOrder]);

@@ -6,6 +6,8 @@ import { AppShell } from "@/components/layout/app-shell";
 import { useCurrentUser } from "@/hooks/use-auth";
 import { BranchProvider, useBranch } from "@/hooks/use-branch";
 import { useRealtime } from "@/hooks/use-realtime";
+import { useRegion } from "@/hooks/use-settings";
+import { setActiveCurrency } from "@/lib/format";
 import { NAV_ITEMS } from "@/components/layout/nav-items";
 import { canOpen, firstAllowedHref } from "@/lib/route-access";
 
@@ -21,6 +23,15 @@ function RealtimeBridge() {
   const { branchId } = useBranch();
   useRealtime(branchId);
   return null;
+}
+
+function CurrencyGate({ children }: { children: React.ReactNode }) {
+  const { branchId } = useBranch();
+  const { data, isError } = useRegion(branchId);
+  if (isError) return <div role="alert" className="p-6">Could not load restaurant settings. Refresh to try again.</div>;
+  if (!data) return <div className="flex min-h-screen items-center justify-center bg-background" />;
+  setActiveCurrency(data.currency, data.country);
+  return children;
 }
 
 export default function DashboardGroupLayout({
@@ -73,9 +84,11 @@ export default function DashboardGroupLayout({
   return (
     <BranchProvider>
       <RealtimeBridge />
-      <AppShell user={data.user} tenantStatus={data.tenantStatus}>
-        {children}
-      </AppShell>
+      <CurrencyGate>
+        <AppShell user={data.user} tenantStatus={data.tenantStatus}>
+          {children}
+        </AppShell>
+      </CurrencyGate>
     </BranchProvider>
   );
 }

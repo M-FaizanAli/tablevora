@@ -1,8 +1,9 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import { registerSchema, type RegisterDto } from "@nodedr-restaurant/types";
+import { COUNTRY_CURRENCY, TAX_REGIME_PRESETS, TAX_REGIMES, registerSchema, suggestedTax, type RegisterDto } from "@nodedr-restaurant/types";
 import { motion, useReducedMotion } from "motion/react";
+import { useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
@@ -14,6 +15,7 @@ import { PasswordInput } from "@/components/ui/password-input";
 import { Label } from "@/components/ui/label";
 import { useRegister } from "@/hooks/use-auth";
 import { ApiError } from "@/lib/api";
+import { countryOptions, currencyOptions, timeZoneOptions } from "@/lib/region-options";
 
 export default function SignupPage() {
   const router = useRouter();
@@ -22,8 +24,28 @@ export default function SignupPage() {
   const {
     register: field,
     handleSubmit,
+    setValue,
+    watch,
     formState: { errors },
-  } = useForm<RegisterDto>({ resolver: zodResolver(registerSchema) });
+  } = useForm<RegisterDto>({
+    resolver: zodResolver(registerSchema),
+    defaultValues: { branchName: "Main Branch", timezone: "UTC", taxRegime: "CUSTOM", taxMode: "INCLUSIVE" },
+  });
+
+  useEffect(() => {
+    setValue("timezone", Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC");
+  }, [setValue]);
+
+  const country = watch("country");
+  const taxRegime = watch("taxRegime");
+  const onCountryChange = (code: string) => {
+    const tax = suggestedTax(code);
+    const suggestion = COUNTRY_CURRENCY[code];
+    setValue("currency", suggestion && currencyOptions.some((c) => c.code === suggestion) ? suggestion : "", { shouldValidate: true });
+    setValue("taxRegime", tax.regime);
+    setValue("taxMode", tax.mode);
+    setValue("taxLabel", tax.label);
+  };
 
   if (process.env.NEXT_PUBLIC_DEMO_MODE === "true") {
     return (
@@ -65,7 +87,7 @@ export default function SignupPage() {
         initial={prefersReducedMotion ? false : { opacity: 0, y: 14 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
-        className="w-full max-w-sm"
+        className="w-full max-w-lg"
       >
         <div className="mb-10 flex flex-col items-center gap-2 text-center">
           <Link href="/">
@@ -109,6 +131,71 @@ export default function SignupPage() {
               </p>
             )}
           </div>
+
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div className="flex flex-col gap-2">
+              <Label htmlFor="country">Country</Label>
+              <select id="country" className="h-10 rounded-md border bg-background px-3" required {...field("country", { onChange: (e) => onCountryChange(e.target.value) })}>
+                <option value="">Select country</option>
+                {countryOptions.map(({ code, name }) => <option key={code} value={code}>{name}</option>)}
+              </select>
+              {errors.country && <p className="text-xs text-destructive">{errors.country.message}</p>}
+            </div>
+            <div className="flex flex-col gap-2">
+              <Label htmlFor="currency">Currency</Label>
+              <select id="currency" className="h-10 rounded-md border bg-background px-3" required {...field("currency")}>
+                <option value="">Select currency</option>
+                {currencyOptions.map(({ code, name }) => <option key={code} value={code}>{code} — {name}</option>)}
+              </select>
+              {errors.currency && <p className="text-xs text-destructive">{errors.currency.message}</p>}
+            </div>
+          </div>
+          <p className="text-xs text-muted-foreground">The currency is suggested from {country ? countryOptions.find((c) => c.code === country)?.name : "your country"}; change it if your restaurant uses another currency. This version supports currencies with two decimal places.</p>
+
+          <div className="flex flex-col gap-2">
+            <Label htmlFor="timezone">Restaurant time zone</Label>
+            <select id="timezone" className="h-10 rounded-md border bg-background px-3" required {...field("timezone")}>
+              {timeZoneOptions.map((zone) => <option key={zone} value={zone}>{zone}</option>)}
+            </select>
+            {errors.timezone && <p className="text-xs text-destructive">{errors.timezone.message}</p>}
+          </div>
+
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div className="flex flex-col gap-2">
+              <Label htmlFor="taxRegime">Tax system</Label>
+              <select id="taxRegime" className="h-10 rounded-md border bg-background px-3" {...field("taxRegime", { onChange: (e) => {
+                const preset = TAX_REGIME_PRESETS[e.target.value as keyof typeof TAX_REGIME_PRESETS];
+                setValue("taxMode", preset.defaultMode);
+                setValue("taxLabel", preset.taxLabel);
+              } })}>
+                {TAX_REGIMES.map((regime) => <option key={regime} value={regime}>{TAX_REGIME_PRESETS[regime].displayName}</option>)}
+              </select>
+            </div>
+            <div className="flex flex-col gap-2">
+              <Label htmlFor="taxMode">Menu prices</Label>
+              <select id="taxMode" className="h-10 rounded-md border bg-background px-3" {...field("taxMode")}>
+                <option value="INCLUSIVE">Include tax</option>
+                <option value="EXCLUSIVE">Add tax at checkout</option>
+              </select>
+            </div>
+          </div>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div className="flex flex-col gap-2">
+              <Label htmlFor="defaultTaxRatePercent">Default tax rate (%)</Label>
+              <Input id="defaultTaxRatePercent" type="number" min="0" max="100" step="0.001" required {...field("defaultTaxRatePercent")} />
+              {errors.defaultTaxRatePercent && <p className="text-xs text-destructive">Enter the rate for this location.</p>}
+            </div>
+            <div className="flex flex-col gap-2">
+              <Label htmlFor="taxLabel">Tax label</Label>
+              <Input id="taxLabel" placeholder={TAX_REGIME_PRESETS[taxRegime ?? "CUSTOM"].taxLabel} {...field("taxLabel")} />
+            </div>
+          </div>
+          <p className="text-xs text-muted-foreground">Tax rates can differ by city, service, and item. Confirm this rate for your location; individual menu items can override it.</p>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div className="flex flex-col gap-2"><Label htmlFor="taxId">Tax registration ID (optional)</Label><Input id="taxId" {...field("taxId")} /></div>
+            <div className="flex flex-col gap-2"><Label htmlFor="branchPhone">Branch phone (optional)</Label><Input id="branchPhone" type="tel" {...field("branchPhone")} /></div>
+          </div>
+          <div className="flex flex-col gap-2"><Label htmlFor="branchAddress">Branch address (optional)</Label><Input id="branchAddress" autoComplete="street-address" {...field("branchAddress")} /></div>
 
           <div className="flex flex-col gap-2">
             <Label htmlFor="ownerName">Your name</Label>

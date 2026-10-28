@@ -28,7 +28,7 @@ import { usePrintKot, usePrintOrderUsb, type PrintJobResult } from "@/hooks/use-
 import { useSettings } from "@/hooks/use-settings";
 import { api, ApiError } from "@/lib/api";
 import { discountSummary, parseMoney, planPayment } from "@/lib/bill";
-import { formatCurrency } from "@/lib/format";
+import { formatCurrency, getActiveCurrency, getActiveLocale } from "@/lib/format";
 import { publishDisplay } from "@/lib/customer-display";
 import { playPaymentReceived } from "@/lib/celebrate";
 import { buildUpiUri } from "@/lib/upi";
@@ -216,7 +216,7 @@ export function CheckoutPanel({
   useEffect(() => {
     if (completed) return;
     if (upiUri) {
-      publishDisplay({ kind: "upi", total: upiAmount, uri: upiUri, payee: upiName || "" });
+      publishDisplay({ kind: "upi", total: upiAmount, uri: upiUri, payee: upiName || "", currency: getActiveCurrency(), locale: getActiveLocale() });
     }
   }, [upiUri, upiAmount, upiName, completed]);
 
@@ -258,7 +258,7 @@ export function CheckoutPanel({
           setAmountText("");
           if (result.settlement.fullyPaid) {
             setCompleted(result);
-            publishDisplay({ kind: "paid", total: Number(result.totalAmount), method });
+            publishDisplay({ kind: "paid", total: Number(result.totalAmount), method, currency: getActiveCurrency(), locale: getActiveLocale() });
             playPaymentReceived(formatCurrency(result.totalAmount));
             toast.success("Payment recorded");
           } else {
@@ -586,7 +586,7 @@ export function CheckoutPanel({
           {remainingDue > 0 && (
             <div className="flex flex-col gap-2">
               <Label>Payment method</Label>
-              <PaymentMethodButtons methods={METHODS} value={method} onChange={setMethod} />
+              <PaymentMethodButtons methods={METHODS.filter((candidate) => candidate !== "UPI" || getActiveCurrency() === "INR")} value={method} onChange={setMethod} />
             </div>
           )}
 

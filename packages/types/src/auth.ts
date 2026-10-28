@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { restaurantRegionSchema } from "./region";
 
 export const loginSchema = z.object({
   email: z.string().email(),
@@ -8,7 +9,7 @@ export const loginSchema = z.object({
 });
 export type LoginDto = z.infer<typeof loginSchema>;
 
-export const registerSchema = z.object({
+export const registerSchema = restaurantRegionSchema.extend({
   restaurantName: z.string().min(1),
   branchName: z.string().min(1).default("Main Branch"),
   ownerName: z.string().min(1),

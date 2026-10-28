@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { countryCodeSchema, taxRateSchema } from "./region";
 
 // Multi-region tax support (2026-09-27). A branch picks a TaxRegime, which
 // supplies sensible defaults for how the receipt labels tax and whether
@@ -45,7 +46,7 @@ export const TAX_REGIME_PRESETS: Record<TaxRegime, TaxRegimePreset> = {
     taxLabel: "GST",
     taxIdLabel: "GSTIN",
     splitCgstSgst: true,
-    exampleRates: "5% / 12% / 18% (typical restaurant slabs)",
+    exampleRates: "Confirm the applicable rate for each item and service",
     defaultCountry: "IN",
   },
   US_SALES_TAX: {
@@ -55,7 +56,7 @@ export const TAX_REGIME_PRESETS: Record<TaxRegime, TaxRegimePreset> = {
     taxLabel: "Sales Tax",
     taxIdLabel: "Sales Tax / EIN",
     splitCgstSgst: false,
-    exampleRates: "Varies by state/city — commonly 6–10%",
+    exampleRates: "Rates vary by state, city, and item",
     defaultCountry: "US",
   },
   EU_VAT: {
@@ -65,7 +66,7 @@ export const TAX_REGIME_PRESETS: Record<TaxRegime, TaxRegimePreset> = {
     taxLabel: "VAT",
     taxIdLabel: "VAT No.",
     splitCgstSgst: false,
-    exampleRates: "Reduced rate often applies to dine-in food, e.g. 10% Germany / 10% Italy",
+    exampleRates: "Rates vary by member state and item",
     defaultCountry: "DE",
   },
   ES_IVA: {
@@ -75,7 +76,7 @@ export const TAX_REGIME_PRESETS: Record<TaxRegime, TaxRegimePreset> = {
     taxLabel: "IVA",
     taxIdLabel: "NIF/CIF",
     splitCgstSgst: false,
-    exampleRates: "10% (hospitality reduced rate) / 21% (general rate)",
+    exampleRates: "Confirm the applicable IVA rate for each item",
     defaultCountry: "ES",
   },
   CUSTOM: {
@@ -101,7 +102,8 @@ export function resolveTaxIdLabel(taxRegime: TaxRegime): string {
 }
 
 export const branchTaxSettingsSchema = z.object({
-  country: z.string().length(2).optional(),
+  country: countryCodeSchema.optional(),
+  defaultTaxRatePercent: taxRateSchema.optional(),
   taxRegime: z.enum(TAX_REGIMES).optional(),
   taxMode: z.enum(TAX_MODES).optional(),
   taxLabel: z.string().max(30).optional().nullable(),

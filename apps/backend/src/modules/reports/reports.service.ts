@@ -25,7 +25,7 @@ export const REPORT_CATALOG = [
   { key: 'slow-movers', title: 'Slow movers', group: 'Sales' },
   { key: 'payment-methods', title: 'Payment methods', group: 'Sales' },
   { key: 'discounts', title: 'Discounts & coupons', group: 'Sales' },
-  { key: 'tax', title: 'Tax (GST) summary', group: 'Tax' },
+  { key: 'tax', title: 'Tax summary', group: 'Tax' },
   { key: 'peak-hours', title: 'Peak hours', group: 'Analytics' },
   { key: 'food-cost', title: 'Food cost & margins', group: 'Analytics' },
   { key: 'customers', title: 'Top customers', group: 'Customers' },

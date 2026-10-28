@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { restaurantRegionSchema } from "./region";
 
 export const restaurantLifecycleStatusSchema = z.enum([
   "PENDING",
@@ -55,8 +56,8 @@ export type PlatformRestaurantStatusUpdate = z.infer<
   typeof platformRestaurantStatusUpdateSchema
 >;
 
-export const platformRestaurantCreateSchema = z
-  .object({
+export const platformRestaurantCreateSchema = restaurantRegionSchema
+  .extend({
     restaurantName: z.string().trim().min(2).max(120),
     branchName: z.string().trim().min(2).max(120),
     ownerName: z.string().trim().min(2).max(120),

@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { taxRateSchema } from "./region";
 
 export const spiceLevelSchema = z.enum(["NONE", "MILD", "MEDIUM", "HOT", "EXTRA_HOT"]);
 
@@ -13,7 +14,7 @@ export type MenuCategoryDto = z.infer<typeof menuCategorySchema>;
 export const modifierSchema = z.object({
   name: z.string().min(1),
   priceAdjustment: z.coerce.number().default(0),
-  taxRatePercent: z.coerce.number().optional(),
+  taxRatePercent: taxRateSchema.optional(),
   kitchenNote: z.string().optional(),
   isDefault: z.boolean().default(false),
   sortOrder: z.number().int().default(0),
@@ -39,7 +40,7 @@ export const menuItemSchema = z.object({
   price: z.coerce.number().nonnegative(),
   // Set to enable the Half / Full / Custom portion picker; `price` is the full portion.
   halfPrice: z.number().nonnegative().nullable().optional(),
-  taxRatePercent: z.coerce.number().min(0).max(100).default(0),
+  taxRatePercent: taxRateSchema.optional(),
   costPrice: z.coerce.number().nonnegative().optional(),
   prepTimeMinutes: z.number().int().nonnegative().optional(),
   calories: z.number().int().nonnegative().optional(),

@@ -7,6 +7,8 @@ import type {
   PlatformRestaurantSummary,
   RestaurantLifecycleStatus,
 } from "@nodedr-restaurant/types";
+import { COUNTRY_CURRENCY, TAX_REGIME_PRESETS, TAX_REGIMES, suggestedTax, type TaxMode, type TaxRegime } from "@nodedr-restaurant/types";
+import { countryOptions, currencyOptions, timeZoneOptions } from "@/lib/region-options";
 
 const statusOptions: [RestaurantLifecycleStatus | "ALL", string][] = [
   ["ALL", "All accounts"],
@@ -28,6 +30,12 @@ export default function PlatformAdminPage() {
   const [loading, setLoading] = useState(true);
   const [selected, setSelected] = useState<any>(null);
   const [createOpen, setCreateOpen] = useState(false);
+  const [createCountry, setCreateCountry] = useState("");
+  const [createCurrency, setCreateCurrency] = useState("");
+  const [createTimeZone, setCreateTimeZone] = useState("UTC");
+  const [createRegime, setCreateRegime] = useState<TaxRegime>("CUSTOM");
+  const [createMode, setCreateMode] = useState<TaxMode>("INCLUSIVE");
+  const [createTaxLabel, setCreateTaxLabel] = useState("Tax");
   const [invite, setInvite] = useState<{
     restaurantName: string;
     url: string;
@@ -92,6 +100,16 @@ export default function PlatformAdminPage() {
         branchName: form.get("branchName"),
         ownerName: form.get("ownerName"),
         ownerEmail: form.get("ownerEmail"),
+        country: createCountry,
+        currency: createCurrency,
+        timezone: createTimeZone,
+        taxRegime: createRegime,
+        taxMode: createMode,
+        defaultTaxRatePercent: form.get("defaultTaxRatePercent"),
+        taxLabel: createTaxLabel,
+        taxId: form.get("taxId") || undefined,
+        branchAddress: form.get("branchAddress") || undefined,
+        branchPhone: form.get("branchPhone") || undefined,
       });
       setInvite({
         restaurantName: result.restaurantName,
@@ -365,7 +383,7 @@ export default function PlatformAdminPage() {
         >
           <form
             onSubmit={createRestaurant}
-            className="w-full max-w-lg space-y-4 rounded-xl bg-background p-6 shadow-xl"
+            className="max-h-[90vh] w-full max-w-lg space-y-4 overflow-y-auto rounded-xl bg-background p-6 shadow-xl"
             onClick={(event) => event.stopPropagation()}
           >
             <div>
@@ -397,6 +415,64 @@ export default function PlatformAdminPage() {
                 />
               </label>
             ))}
+            <div className="grid gap-4 sm:grid-cols-2">
+              <label className="block text-sm">Country
+                <select required value={createCountry} onChange={(e) => {
+                  const country = e.target.value;
+                  const tax = suggestedTax(country);
+                  setCreateCountry(country);
+                  const suggestion = COUNTRY_CURRENCY[country];
+                  setCreateCurrency(suggestion && currencyOptions.some((c) => c.code === suggestion) ? suggestion : "");
+                  setCreateRegime(tax.regime);
+                  setCreateMode(tax.mode);
+                  setCreateTaxLabel(tax.label);
+                }} className="mt-1 w-full rounded-md border bg-background px-3 py-2">
+                  <option value="">Select country</option>
+                  {countryOptions.map(({code,name}) => <option key={code} value={code}>{name}</option>)}
+                </select>
+              </label>
+              <label className="block text-sm">Currency
+                <select required value={createCurrency} onChange={(e) => setCreateCurrency(e.target.value)} className="mt-1 w-full rounded-md border bg-background px-3 py-2">
+                  <option value="">Select currency</option>
+                  {currencyOptions.map(({code,name}) => <option key={code} value={code}>{code} — {name}</option>)}
+                </select>
+              </label>
+            </div>
+            <label className="block text-sm">Restaurant time zone
+              <select required value={createTimeZone} onChange={(e) => setCreateTimeZone(e.target.value)} className="mt-1 w-full rounded-md border bg-background px-3 py-2">
+                {timeZoneOptions.map((zone) => <option key={zone} value={zone}>{zone}</option>)}
+              </select>
+            </label>
+            <p className="text-xs text-muted-foreground">Currency choices currently support two decimal places.</p>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <label className="block text-sm">Tax system
+                <select value={createRegime} onChange={(e) => {
+                  const regime = e.target.value as TaxRegime;
+                  setCreateRegime(regime);
+                  setCreateMode(TAX_REGIME_PRESETS[regime].defaultMode);
+                  setCreateTaxLabel(TAX_REGIME_PRESETS[regime].taxLabel);
+                }} className="mt-1 w-full rounded-md border bg-background px-3 py-2">
+                  {TAX_REGIMES.map((regime) => <option key={regime} value={regime}>{TAX_REGIME_PRESETS[regime].displayName}</option>)}
+                </select>
+              </label>
+              <label className="block text-sm">Menu prices
+                <select value={createMode} onChange={(e) => setCreateMode(e.target.value as TaxMode)} className="mt-1 w-full rounded-md border bg-background px-3 py-2">
+                  <option value="INCLUSIVE">Include tax</option><option value="EXCLUSIVE">Add tax at checkout</option>
+                </select>
+              </label>
+            </div>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <label className="block text-sm">Default tax rate (%)
+                <input required name="defaultTaxRatePercent" type="number" min="0" max="100" step="0.001" className="mt-1 w-full rounded-md border bg-background px-3 py-2" />
+              </label>
+              <label className="block text-sm">Tax label
+                <input value={createTaxLabel} onChange={(e) => setCreateTaxLabel(e.target.value)} maxLength={30} className="mt-1 w-full rounded-md border bg-background px-3 py-2" />
+              </label>
+            </div>
+            <p className="text-xs text-muted-foreground">Confirm the rate for this location. Menu items can have a different rate.</p>
+            <label className="block text-sm">Tax registration ID (optional)<input name="taxId" className="mt-1 w-full rounded-md border bg-background px-3 py-2" /></label>
+            <label className="block text-sm">Branch address (optional)<input name="branchAddress" className="mt-1 w-full rounded-md border bg-background px-3 py-2" /></label>
+            <label className="block text-sm">Branch phone (optional)<input name="branchPhone" type="tel" className="mt-1 w-full rounded-md border bg-background px-3 py-2" /></label>
             <div className="flex justify-end gap-2">
               <button
                 type="button"

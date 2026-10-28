@@ -33,6 +33,7 @@ export interface BranchSettings {
   taxMode: TaxMode;
   taxLabel: string | null;
   taxId: string | null;
+  defaultTaxRatePercent: string;
   autoConfirmOrders: boolean;
   autoConfirmReservations: boolean;
   kioskToken: string | null;
@@ -57,11 +58,19 @@ export function useSettings(branchId: string | null) {
   });
 }
 
+export function useRegion(branchId: string | null) {
+  return useQuery({
+    queryKey: ["region", branchId],
+    queryFn: () => api.get<{ country: string; currency: string; timezone: string; taxMode: TaxMode; defaultTaxRatePercent: string }>(`/settings/region?branchId=${branchId}`),
+    enabled: !!branchId,
+  });
+}
+
 export function useUpdateRestaurantSettings(branchId: string | null) {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (dto: RestaurantSettingsDto) => api.patch("/settings/restaurant", dto),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["settings", branchId] }),
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["settings", branchId] }); queryClient.invalidateQueries({ queryKey: ["region", branchId] }); },
   });
 }
 
@@ -76,7 +85,7 @@ export function useUpdateBranchSettings(branchId: string | null) {
   return useMutation({
     mutationFn: (dto: BranchSettingsDto) =>
       api.patch(`/settings/branch?branchId=${branchId}`, dto),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["settings", branchId] }),
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["settings", branchId] }); queryClient.invalidateQueries({ queryKey: ["region", branchId] }); },
   });
 }
 

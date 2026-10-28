@@ -10,9 +10,9 @@ export interface DisplayLine {
 
 export type DisplayState =
   | { kind: "idle" }
-  | { kind: "cart"; lines: DisplayLine[]; subtotal: number }
-  | { kind: "upi"; total: number; uri: string; payee: string }
-  | { kind: "paid"; total: number; method?: string };
+  | { kind: "cart"; lines: DisplayLine[]; subtotal: number; currency: string; locale: string }
+  | { kind: "upi"; total: number; uri: string; payee: string; currency: string; locale: string }
+  | { kind: "paid"; total: number; method?: string; currency: string; locale: string };
 
 const CHANNEL = "orderrestro-customer-display";
 

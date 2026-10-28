@@ -98,9 +98,14 @@ export class MenuService {
   async createItem(branchId: string, dto: MenuItemDto) {
     const { modifierGroupIds, ...rest } = dto;
     await this.assertModifierGroupsInBranch(branchId, modifierGroupIds);
+    const branch = await this.prisma.branch.findUniqueOrThrow({
+      where: { id: branchId },
+      select: { defaultTaxRatePercent: true },
+    });
     return this.prisma.menuItem.create({
       data: {
         ...rest,
+        taxRatePercent: dto.taxRatePercent ?? branch.defaultTaxRatePercent,
         branchId,
         modifierGroups: {
           create: modifierGroupIds.map((modifierGroupId, index) => ({
