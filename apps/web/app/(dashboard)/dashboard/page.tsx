@@ -5,6 +5,7 @@ import { ChefHat, ClipboardList, Flame, Globe, ReceiptText, Store, Timer, Trendi
 import Link from "next/link";
 import { useState } from "react";
 import { QuickActions } from "@/components/dashboard/quick-actions";
+import { ProfitRadar } from "@/components/dashboard/profit-radar";
 import { TrendChart } from "@/components/dashboard/trend-chart";
 import { OrderDetailDialog } from "@/components/orders/order-detail-dialog";
 import { RefundDialog } from "@/components/orders/refund-dialog";
@@ -90,6 +91,8 @@ export default function DashboardPage() {
       <PendingOrdersBanner branchId={branchId} />
 
       <QuickActions />
+
+      <ProfitRadar branchId={branchId} />
 
       {isLoading || !data ? (
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
