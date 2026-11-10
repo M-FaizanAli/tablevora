@@ -41,6 +41,32 @@ export class InventoryService {
     return ingredient;
   }
 
+  async priceImpact(branchId: string, ingredientId: string) {
+    await this.getIngredient(branchId, ingredientId);
+    return this.prisma.menuItem.findMany({
+      where: {
+        branchId,
+        isActive: true,
+        isCombo: false,
+        recipeLines: { some: { ingredientId } },
+      },
+      orderBy: { name: 'asc' },
+      select: {
+        id: true,
+        name: true,
+        price: true,
+        recipeLines: {
+          where: { ingredient: { branchId } },
+          select: {
+            ingredientId: true,
+            quantity: true,
+            ingredient: { select: { costPerUnit: true } },
+          },
+        },
+      },
+    });
+  }
+
   createIngredient(branchId: string, dto: IngredientDto) {
     return this.prisma.ingredient.create({ data: { ...dto, branchId } });
   }

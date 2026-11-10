@@ -90,6 +90,17 @@ export class InventoryController {
     return this.inventoryService.getIngredient(branchId, id);
   }
 
+  @Auth('inventory.manage', 'menu.view')
+  @Get('ingredients/:id/price-impact')
+  async priceImpact(
+    @CurrentUser() user: SessionUser,
+    @Query('branchId') branchId: string,
+    @Param('id') id: string,
+  ) {
+    await this.branchAccess.assertAccess(user.restaurantId, branchId);
+    return this.inventoryService.priceImpact(branchId, id);
+  }
+
   @Auth('inventory.manage')
   @Post('ingredients')
   @UsePipes(new ZodValidationPipe(ingredientSchema))
