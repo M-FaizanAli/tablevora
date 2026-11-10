@@ -35,7 +35,7 @@ For a **dedicated demo database only**, run `pnpm --filter @nodedr-restaurant/ba
 
 ## Deployment
 
-Hosted sample workspace: [Tablevora demo](https://tablevora.vercel.app/login). Use `owner@demo.local` / `Password123!` and fictional information only. The demo uses Vercel for the frontend, Render Free for the API, and Neon Free PostgreSQL provisioned through Vercel Marketplace. Free quotas and cold starts apply.
+Hosted sample workspace: [Tablevora demo](https://tablevora.vercel.app/login). Use `owner@demo.local` / `Password123!` and fictional information only. The demo uses Vercel for the frontend, Render Free for the API, and Neon Free PostgreSQL provisioned through Vercel Marketplace. Free quotas and cold starts apply. Vercel Hobby is limited to personal/noncommercial use and Render Free is not for production applications; see the [launch plan](docs/LAUNCH-PLAN.md) before commercial promotion or onboarding clients.
 
 See [the deployment guide](docs/deployment.md) for Docker, Vercel frontend, and persistent API hosting. The shared demo disables administrative configuration, integrations, system operations, and hardware printing while retaining operational workflows. Menu photos can be added, replaced, or removed; demo uploads are resized and stored in PostgreSQL. It uses sample data; do not enter real customer information.
 
