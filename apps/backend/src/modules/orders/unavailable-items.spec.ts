@@ -5,6 +5,7 @@ describe('unavailable menu items', () => {
   const item = { menuItemId: 'i', quantity: 1, modifierIds: [] };
   const prisma = {
     menuItem: { findMany: jest.fn() },
+    comboComponent: { findMany: jest.fn() },
     order: { findFirst: jest.fn() },
     menuItemModifierGroup: { findMany: jest.fn().mockResolvedValue([]) },
   };
@@ -26,5 +27,12 @@ describe('unavailable menu items', () => {
 
   it('rejects a stale guest cart when creating a new order', async () => {
     await expect(service.createOrder('b', 'u', { type: 'QR_ORDER', items: [item] } as never, { channel: 'ONLINE' })).rejects.toThrow('no longer available');
+  });
+
+  it('rejects a combo whose component was marked unavailable', async () => {
+    prisma.menuItem.findMany.mockResolvedValue([{ id: 'i', name: 'Meal deal', isActive: true, isCombo: true }]);
+    prisma.comboComponent.findMany.mockResolvedValue([{ componentItem: { name: 'Soup' } }]);
+    await expect(service.createOrder('b', 'u', { type: 'TAKEAWAY', items: [item] } as never)).rejects.toThrow('combo contains an unavailable item');
+    expect(prisma.comboComponent.findMany).toHaveBeenCalledWith(expect.objectContaining({ where: expect.objectContaining({ comboItem: { branchId: 'b' } }) }));
   });
 });

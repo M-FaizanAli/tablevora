@@ -15,4 +15,16 @@ describe('stock review', () => {
     expect(result[0].low[0]).toMatchObject({ id: 'i', currentStock: '2', perServing: '3' });
     expect(findMany).toHaveBeenCalledWith(expect.objectContaining({ where: expect.objectContaining({ branchId: 'b' }) }));
   });
+
+  it('uses only paid branch orders for prep averages and excludes inactive items', async () => {
+    const groupBy = jest.fn().mockResolvedValue([
+      { menuItemId: 'active', _sum: { quantity: 28 } },
+      { menuItemId: 'inactive', _sum: { quantity: 14 } },
+    ]);
+    const findMany = jest.fn().mockResolvedValue([{ id: 'active', name: 'Rice bowl' }]);
+    const service = new InventoryService({ orderItem: { groupBy }, menuItem: { findMany } } as never, {} as never);
+    expect(await service.prepGuide('b')).toEqual([{ menuItemId: 'active', name: 'Rice bowl', sold28Days: 28, averagePerDay: 1 }]);
+    expect(groupBy).toHaveBeenCalledWith(expect.objectContaining({ where: expect.objectContaining({ order: expect.objectContaining({ branchId: 'b', status: 'PAID' }), status: { not: 'CANCELLED' } }) }));
+    expect(findMany).toHaveBeenCalledWith(expect.objectContaining({ where: expect.objectContaining({ branchId: 'b', isActive: true }) }));
+  });
 });

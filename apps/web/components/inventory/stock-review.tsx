@@ -9,6 +9,7 @@ import { useUpdateMenuItem } from "@/hooks/use-menu";
 import { api, ApiError } from "@/lib/api";
 
 type Item = { id: string; name: string; isActive: boolean; low: { id: string; name: string; unit: string; currentStock: string; reorderLevel: string; perServing: string }[] };
+type PrepItem = { menuItemId: string; name: string; sold28Days: number; averagePerDay: number };
 
 export function StockReview({ branchId }: { branchId: string | null }) {
   const { data: me } = useCurrentUser();
@@ -21,6 +22,12 @@ export function StockReview({ branchId }: { branchId: string | null }) {
     enabled: !!branchId && allowed,
     refetchInterval: 30_000,
   });
+  const prep = useQuery({
+    queryKey: ["inventory", "prep-guide", branchId],
+    queryFn: () => api.get<PrepItem[]>(`/inventory/prep-guide?${new URLSearchParams({ branchId: branchId! })}`),
+    enabled: !!branchId && allowed,
+    refetchInterval: 60_000,
+  });
   if (!branchId || !allowed) return null;
   async function change(item: Item) {
     try {
@@ -31,7 +38,7 @@ export function StockReview({ branchId }: { branchId: string | null }) {
       toast.error(err instanceof ApiError ? err.message : "Could not change availability");
     }
   }
-  return <Card className="gap-3 p-5">
+  return <div className="grid gap-4 lg:grid-cols-2"><Card className="gap-3 p-5">
     <h2 className="text-lg font-semibold">Stock and menu availability</h2>
     <p className="text-sm text-muted-foreground">Review low ingredients before service. Staff decide when to change an item&apos;s availability.</p>
     {review.isLoading && <p className="text-sm">Loading stock review…</p>}
@@ -43,6 +50,14 @@ export function StockReview({ branchId }: { branchId: string | null }) {
       </div>
       {canChange && <Button type="button" variant="outline" size="sm" disabled={update.isPending} onClick={() => void change(item)}>{item.isActive ? "Mark unavailable" : "Make available"}</Button>}
     </li>)}</ul>}
-    <p className="text-xs text-muted-foreground">Low stock uses recorded quantities and reorder levels; verify counts before acting. Combos and untracked items are not assessed; a combo may still include an unavailable component. Existing open orders are unaffected. Availability changes apply to new items added to orders.</p>
-  </Card>;
+    <p className="text-xs text-muted-foreground">Low stock uses recorded quantities and reorder levels; verify counts before acting. Combos and untracked items are not assessed for low stock. Existing open orders are unaffected.</p>
+  </Card><Card className="gap-3 p-5">
+    <h2 className="text-lg font-semibold">Preparation guide</h2>
+    <p className="text-sm text-muted-foreground">Most sold menu items over the past 28 days. Use the daily average to plan your next shift.</p>
+    {prep.isLoading && <p className="text-sm">Loading sales history…</p>}
+    {prep.isError && <p role="alert" className="text-sm text-destructive">Could not load preparation guide.</p>}
+    {prep.data?.length === 0 && <p className="text-sm text-muted-foreground">No paid orders in the last 28 days yet.</p>}
+    {prep.data && prep.data.length > 0 && <ul className="divide-y divide-border">{prep.data.map((item) => <li key={item.menuItemId} className="flex justify-between gap-3 py-2 text-sm"><span>{item.name}</span><span className="shrink-0 tabular-nums">{item.averagePerDay}/day</span></li>)}</ul>}
+    <p className="text-xs text-muted-foreground">This is an average of paid order quantities, not a demand forecast or automatic prep quantity. Adjust for reservations, holidays, weather, events, and stock on hand. Cancelled items are excluded.</p>
+  </Card></div>;
 }

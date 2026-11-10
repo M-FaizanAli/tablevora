@@ -50,7 +50,7 @@ export class PublicMenuService {
       orderBy: { sortOrder: 'asc' },
       include: {
         items: {
-          where: { isActive: true },
+          where: { isActive: true, comboComponents: { every: { componentItem: { isActive: true } } } },
           orderBy: { sortOrder: 'asc' },
           select: {
             id: true,

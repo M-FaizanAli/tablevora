@@ -128,6 +128,28 @@ export class InventoryService {
     }).filter((item) => item.low.length > 0 || !item.isActive);
   }
 
+  async prepGuide(branchId: string) {
+    const since = new Date(Date.now() - 28 * 86_400_000);
+    const sold = await this.prisma.orderItem.groupBy({
+      by: ['menuItemId'],
+      where: { order: { branchId, status: 'PAID', billedAt: { gte: since } }, status: { not: 'CANCELLED' } },
+      _sum: { quantity: true },
+      orderBy: { _sum: { quantity: 'desc' } },
+      take: 25,
+    });
+    const items = await this.prisma.menuItem.findMany({
+      where: { branchId, isActive: true, id: { in: sold.map((row) => row.menuItemId) } },
+      select: { id: true, name: true },
+    });
+    const names = new Map(items.map((item) => [item.id, item.name]));
+    return sold.filter((row) => names.has(row.menuItemId)).slice(0, 10).map((row) => ({
+      menuItemId: row.menuItemId,
+      name: names.get(row.menuItemId)!,
+      sold28Days: row._sum.quantity ?? 0,
+      averagePerDay: Math.round(((row._sum.quantity ?? 0) / 28) * 10) / 10,
+    }));
+  }
+
   // --- Suppliers --------------------------------------------------------------
 
   listSuppliers(branchId: string) {

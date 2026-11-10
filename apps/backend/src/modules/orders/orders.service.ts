@@ -164,6 +164,16 @@ export class OrdersService {
     return branch?.taxMode ?? 'INCLUSIVE';
   }
 
+  private async assertComboComponentsActive(branchId: string, menuItems: { id: string; isCombo: boolean }[]) {
+    const comboIds = menuItems.filter((item) => item.isCombo).map((item) => item.id);
+    if (comboIds.length === 0) return;
+    const unavailable = await this.prisma.comboComponent.findMany({
+      where: { comboItemId: { in: comboIds }, comboItem: { branchId }, componentItem: { isActive: false } },
+      select: { componentItem: { select: { name: true } } },
+    });
+    if (unavailable.length) throw new BadRequestException('A combo contains an unavailable item');
+  }
+
   private async formatBranchAmount(branchId: string, amount: number): Promise<string> {
     const branch = await this.prisma.branch.findUnique({
       where: { id: branchId },
@@ -210,6 +220,7 @@ export class OrdersService {
       );
     }
     assertMenuItemsActive(menuItems);
+    await this.assertComboComponentsActive(branchId, menuItems);
     const menuItemById = new Map(menuItems.map((m) => [m.id, m]));
     const taxMode = await this.getBranchTaxMode(branchId);
 
@@ -493,6 +504,7 @@ export class OrdersService {
       );
     }
     assertMenuItemsActive(menuItems);
+    await this.assertComboComponentsActive(branchId, menuItems);
     const menuItemById = new Map(menuItems.map((m) => [m.id, m]));
     const taxMode = await this.getBranchTaxMode(branchId);
 

@@ -66,6 +66,13 @@ export class InventoryController {
     return this.inventoryService.stockReview(branchId);
   }
 
+  @Auth('inventory.manage', 'menu.view')
+  @Get('prep-guide')
+  async prepGuide(@CurrentUser() user: SessionUser, @Query('branchId') branchId: string) {
+    await this.branchAccess.assertAccess(user.restaurantId, branchId);
+    return this.inventoryService.prepGuide(branchId);
+  }
+
   @Auth('inventory.manage')
   @Get('ingredients')
   async listIngredients(
