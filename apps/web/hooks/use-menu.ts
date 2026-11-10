@@ -75,6 +75,7 @@ export function useMenuItems(branchId: string | null, categoryId?: string) {
         `/menu/items?branchId=${branchId}${categoryId ? `&categoryId=${categoryId}` : ""}`,
       ),
     enabled: !!branchId,
+    refetchInterval: 15_000,
   });
 }
 

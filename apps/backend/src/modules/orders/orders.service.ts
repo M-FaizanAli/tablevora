@@ -52,6 +52,13 @@ const KOT_FORWARD_STATUSES = [
   'SERVED',
 ] as const;
 
+export function assertMenuItemsActive(items: { name: string; isActive: boolean }[]) {
+  const unavailable = items.filter((item) => item.isActive === false);
+  if (unavailable.length) {
+    throw new BadRequestException(`${unavailable.map((item) => `"${item.name}"`).join(', ')} is no longer available`);
+  }
+}
+
 @Injectable()
 export class OrdersService {
   private readonly logger = new Logger(OrdersService.name);
@@ -202,6 +209,7 @@ export class OrdersService {
         'One or more menu items are invalid for this branch',
       );
     }
+    assertMenuItemsActive(menuItems);
     const menuItemById = new Map(menuItems.map((m) => [m.id, m]));
     const taxMode = await this.getBranchTaxMode(branchId);
 
@@ -484,6 +492,7 @@ export class OrdersService {
         'One or more menu items are invalid for this branch',
       );
     }
+    assertMenuItemsActive(menuItems);
     const menuItemById = new Map(menuItems.map((m) => [m.id, m]));
     const taxMode = await this.getBranchTaxMode(branchId);
 

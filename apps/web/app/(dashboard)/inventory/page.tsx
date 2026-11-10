@@ -6,6 +6,7 @@ import { AddIngredientDialog } from "@/components/inventory/add-ingredient-dialo
 import { AdjustStockDialog } from "@/components/inventory/adjust-stock-dialog";
 import { InventoryTabs } from "@/components/inventory/inventory-tabs";
 import { PriceSimulator } from "@/components/inventory/price-simulator";
+import { StockReview } from "@/components/inventory/stock-review";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -47,6 +48,8 @@ export default function InventoryPage() {
       <InventoryTabs />
 
       <PriceSimulator key={branchId} branchId={branchId} />
+
+      <StockReview branchId={branchId} />
 
       {trackingStatus && trackingStatus.problems.length > 0 && (
         <div role="alert" className="flex gap-3 rounded-xl border border-warning/40 bg-warning/10 p-4 text-sm">

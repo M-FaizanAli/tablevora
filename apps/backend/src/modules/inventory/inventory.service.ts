@@ -101,6 +101,33 @@ export class InventoryService {
     );
   }
 
+  async stockReview(branchId: string) {
+    const items = await this.prisma.menuItem.findMany({
+      where: { branchId, isCombo: false, inventoryTracking: { in: ['RECIPE', 'DIRECT'] } },
+      orderBy: { name: 'asc' },
+      select: {
+        id: true, name: true, isActive: true, inventoryTracking: true,
+        stockQuantityPerSale: true,
+        stockIngredient: { select: { id: true, branchId: true, name: true, unit: true, currentStock: true, reorderLevel: true } },
+        recipeLines: { where: { ingredient: { branchId } }, select: { quantity: true, ingredient: { select: { id: true, branchId: true, name: true, unit: true, currentStock: true, reorderLevel: true } } } },
+      },
+    });
+    return items.map((item) => {
+      const lines = item.inventoryTracking === 'DIRECT'
+        ? item.stockIngredient && item.stockIngredient.branchId === branchId
+          ? [{ ingredient: item.stockIngredient, quantity: item.stockQuantityPerSale }]
+          : []
+        : item.recipeLines;
+      const low = lines.filter(({ ingredient, quantity }) =>
+        Number(ingredient.currentStock) <= Number(ingredient.reorderLevel) || Number(ingredient.currentStock) < Number(quantity),
+      ).map(({ ingredient, quantity }) => ({
+        id: ingredient.id, name: ingredient.name, unit: ingredient.unit,
+        currentStock: ingredient.currentStock, reorderLevel: ingredient.reorderLevel, perServing: quantity,
+      }));
+      return { id: item.id, name: item.name, isActive: item.isActive, low };
+    }).filter((item) => item.low.length > 0 || !item.isActive);
+  }
+
   // --- Suppliers --------------------------------------------------------------
 
   listSuppliers(branchId: string) {

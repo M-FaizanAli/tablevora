@@ -15,7 +15,7 @@ export function ProductGrid({ branchId, onSelect }: { branchId: string | null; o
   const [activeCategoryId, setActiveCategoryId] = useState<string | undefined>();
   const [search, setSearch] = useState("");
   const { data: items, isLoading, isError, error, refetch, isFetching } = useMenuItems(branchId, activeCategoryId);
-  const filtered = items?.filter((item) => item.name.toLowerCase().includes(search.toLowerCase()));
+  const filtered = items?.filter((item) => item.isActive && item.name.toLowerCase().includes(search.toLowerCase()));
   return (
     <div className="flex h-full min-h-0 min-w-0 flex-col gap-3">
       <div className="relative shrink-0">
